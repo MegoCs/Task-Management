@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const AUTH_BASE_URL = process.env.REACT_APP_AUTH_URL || 'http://localhost:5001/api';
 
 export interface TaskResponse {
   id: string;
@@ -105,12 +106,12 @@ class ApiService {
 
   // Auth methods
   async login(request: LoginRequest): Promise<AuthResponse> {
-    const response = await axios.post(`${this.baseURL}/auth/login`, request);
+    const response = await axios.post(`${AUTH_BASE_URL}/auth/login`, request);
     return response.data;
   }
 
   async register(request: RegisterRequest): Promise<AuthResponse> {
-    const response = await axios.post(`${this.baseURL}/auth/register`, request);
+    const response = await axios.post(`${AUTH_BASE_URL}/auth/register`, request);
     return response.data;
   }
 

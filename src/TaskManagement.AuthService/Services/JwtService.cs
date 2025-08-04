@@ -6,12 +6,11 @@ using Microsoft.IdentityModel.Tokens;
 using TaskManagement.Domain.Entities;
 using TaskManagement.Infrastructure.Configuration;
 
-namespace TaskManagement.API.Services;
+namespace TaskManagement.AuthService.Services;
 
 public interface IJwtService
 {
     string GenerateToken(User user);
-    ClaimsPrincipal? ValidateToken(string token);
 }
 
 public class JwtService : IJwtService
@@ -44,33 +43,5 @@ public class JwtService : IJwtService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
-    }
-
-    public ClaimsPrincipal? ValidateToken(string token)
-    {
-        try
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
-
-            var validationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = _jwtSettings.Issuer,
-                ValidateAudience = true,
-                ValidAudience = _jwtSettings.Audience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            };
-
-            var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
-            return principal;
-        }
-        catch
-        {
-            return null;
-        }
     }
 }

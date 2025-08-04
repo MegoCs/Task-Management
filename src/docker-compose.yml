@@ -51,18 +51,34 @@ services:
       - Jwt__SecretKey=920cb08112ee7e67e5473cda20e19903
       - Jwt__Issuer=TaskManagementAPI
       - Jwt__Audience=TaskManagementClient
-      - Jwt__ExpiryHours=24
-      - Email__SmtpServer=smtp.gmail.com
-      - Email__SmtpPort=587
-      - Email__EnableSsl=true
-      - Email__Username=your-email@gmail.com
-      - Email__Password=your-app-password
-      - Email__FromName=Task Management System
+      - Jwt__ExpirationMinutes=1440
     ports:
       - "5000:80"
     depends_on:
       - mongodb
       - rabbitmq
+    networks:
+      - task-management-network
+
+  task-management-auth:
+    build:
+      context: .
+      dockerfile: TaskManagement.AuthService/Dockerfile
+    container_name: task-management-auth
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - Database__ConnectionString=mongodb://taskuser:taskpass@mongodb:27017/TaskManagementDB?authSource=TaskManagementDB
+      - Database__DatabaseName=TaskManagementDB
+      - Jwt__SecretKey=920cb08112ee7e67e5473cda20e19903
+      - Jwt__Issuer=TaskManagementAPI
+      - Jwt__Audience=TaskManagementClient
+      - Jwt__ExpirationMinutes=1440
+    ports:
+      - "5001:80"
+    depends_on:
+      - mongodb
     networks:
       - task-management-network
 
@@ -84,13 +100,14 @@ services:
       - Email__SmtpServer=smtp.gmail.com
       - Email__SmtpPort=587
       - Email__EnableSsl=true
-      - Email__Username=your-email@gmail.com
-      - Email__Password=your-app-password
+      - Email__Username=Ahmed.Fci01@gmail.com
+      - Email__Password=AhmedOldGmailPassword
       - Email__FromName=Task Management System
     depends_on:
       - mongodb
       - rabbitmq
       - task-management-api
+      - task-management-auth
     networks:
       - task-management-network
 
@@ -102,6 +119,7 @@ services:
     restart: unless-stopped
     environment:
       - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_AUTH_URL=http://localhost:5001/api
       - REACT_APP_SIGNALR_URL=http://localhost:5000/taskHub
     ports:
       - "3000:3000"

@@ -34,7 +34,6 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Add services
 builder.Services.AddScoped<ITaskService, TaskService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMessagePublisher, MessagePublisher>();
 
