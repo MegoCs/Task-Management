@@ -151,8 +151,8 @@ function KanbanBoard() {
             )}
           </div>
         </div>
-        <button className="btn btn-primary" onClick={handleCreateTask}>
-          + Add Task
+        <button className="btn add-task-btn" onClick={handleCreateTask}>
+          ✨ Add Task
         </button>
       </div>
 

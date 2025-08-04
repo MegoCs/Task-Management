@@ -35,7 +35,8 @@ public class TaskReminderConsumer : IConsumer<TaskReminderMessage>
                     message.AssigneeEmail,
                     message.AssigneeName,
                     message.TaskTitle,
-                    message.DueDate);
+                    message.DueDate,
+                    context.CancellationToken);
 
                 _logger.LogInformation("Reminder sent for task {TaskId} to {Email}", 
                     message.TaskId, message.AssigneeEmail);

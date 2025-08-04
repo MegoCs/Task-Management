@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TaskManagement.Application.Interfaces;
 using TaskManagement.Domain.DTOs;
 
@@ -12,23 +11,25 @@ namespace TaskManagement.API.Controllers;
 public class TasksController : ControllerBase
 {
     private readonly ITaskService _taskService;
+    private readonly IUserService _userService;
 
-    public TasksController(ITaskService taskService)
+    public TasksController(ITaskService taskService, IUserService userService)
     {
         _taskService = taskService;
+        _userService = userService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<TaskResponse>>> GetAllTasks()
+    public async Task<ActionResult<List<TaskResponse>>> GetAllTasks(CancellationToken cancellationToken = default)
     {
-        var tasks = await _taskService.GetAllTasksAsync();
+        var tasks = await _taskService.GetAllTasksAsync(cancellationToken);
         return Ok(tasks);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskResponse>> GetTask(string id)
+    public async Task<ActionResult<TaskResponse>> GetTask(string id, CancellationToken cancellationToken = default)
     {
-        var task = await _taskService.GetTaskByIdAsync(id);
+        var task = await _taskService.GetTaskByIdAsync(id, cancellationToken);
         if (task == null)
             return NotFound();
 
@@ -36,24 +37,24 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskResponse>> CreateTask(CreateTaskRequest request)
+    public async Task<ActionResult<TaskResponse>> CreateTask(CreateTaskRequest request, CancellationToken cancellationToken = default)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        var task = await _taskService.CreateTaskAsync(request, userId);
+        var task = await _taskService.CreateTaskAsync(request, userId, cancellationToken);
         return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<TaskResponse>> UpdateTask(string id, UpdateTaskRequest request)
+    public async Task<ActionResult<TaskResponse>> UpdateTask(string id, UpdateTaskRequest request, CancellationToken cancellationToken = default)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        var task = await _taskService.UpdateTaskAsync(id, request, userId);
+        var task = await _taskService.UpdateTaskAsync(id, request, userId, cancellationToken);
         if (task == null)
             return NotFound();
 
@@ -61,13 +62,13 @@ public class TasksController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTask(string id)
+    public async Task<IActionResult> DeleteTask(string id, CancellationToken cancellationToken = default)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        var success = await _taskService.DeleteTaskAsync(id, userId);
+        var success = await _taskService.DeleteTaskAsync(id, userId, cancellationToken);
         if (!success)
             return NotFound();
 
@@ -75,14 +76,14 @@ public class TasksController : ControllerBase
     }
 
     [HttpPut("{id}/order")]
-    public async Task<IActionResult> UpdateTaskOrder(string id, [FromBody] UpdateTaskOrderRequest request)
+    public async Task<IActionResult> UpdateTaskOrder(string id, [FromBody] UpdateTaskOrderRequest request, CancellationToken cancellationToken = default)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
         request.TaskId = id; // Ensure the ID matches the route parameter
-        var success = await _taskService.UpdateTaskOrderAsync(request, userId);
+        var success = await _taskService.UpdateTaskOrderAsync(request, userId, cancellationToken);
         if (!success)
             return NotFound();
 
@@ -90,15 +91,13 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost("{id}/comments")]
-    public async Task<ActionResult<TaskResponse>> AddComment(string id, AddCommentRequest request)
+    public async Task<ActionResult<TaskResponse>> AddComment(string id, AddCommentRequest request, CancellationToken cancellationToken = default)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userName = User.FindFirst(ClaimTypes.Name)?.Value;
-        
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
+        var currentUser = _userService.GetCurrentUser();
+        if (currentUser == null)
             return Unauthorized();
 
-        var task = await _taskService.AddCommentAsync(id, request, userId, userName);
+        var task = await _taskService.AddCommentAsync(id, request, currentUser.Id, currentUser.Name, cancellationToken);
         if (task == null)
             return NotFound();
 

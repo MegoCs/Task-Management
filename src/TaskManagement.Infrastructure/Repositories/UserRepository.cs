@@ -14,40 +14,40 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public async Task<User?> GetUserByIdAsync(string id)
+    public async Task<User?> GetUserByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _context.Users
             .Find(u => u.Id == id)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<User?> GetUserByEmailAsync(string email)
+    public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         return await _context.Users
             .Find(u => u.Email == email)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<User> CreateUserAsync(User user)
+    public async Task<User> CreateUserAsync(User user, CancellationToken cancellationToken = default)
     {
         user.CreatedAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
         
-        await _context.Users.InsertOneAsync(user);
+        await _context.Users.InsertOneAsync(user, cancellationToken: cancellationToken);
         return user;
     }
 
-    public async Task<User?> UpdateUserAsync(string id, User user)
+    public async Task<User?> UpdateUserAsync(string id, User user, CancellationToken cancellationToken = default)
     {
         user.UpdatedAt = DateTime.UtcNow;
         
-        var result = await _context.Users.ReplaceOneAsync(u => u.Id == id, user);
+        var result = await _context.Users.ReplaceOneAsync(u => u.Id == id, user, cancellationToken: cancellationToken);
         return result.ModifiedCount > 0 ? user : null;
     }
 
-    public async Task<bool> DeleteUserAsync(string id)
+    public async Task<bool> DeleteUserAsync(string id, CancellationToken cancellationToken = default)
     {
-        var result = await _context.Users.DeleteOneAsync(u => u.Id == id);
+        var result = await _context.Users.DeleteOneAsync(u => u.Id == id, cancellationToken);
         return result.DeletedCount > 0;
     }
 }

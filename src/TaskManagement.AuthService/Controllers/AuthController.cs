@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
+    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -41,7 +41,7 @@ public class AuthController : ControllerBase
             }
 
             // Check if user already exists
-            var existingUser = await _userRepository.GetUserByEmailAsync(request.Email);
+            var existingUser = await _userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
             if (existingUser != null)
             {
                 _logger.LogWarning("Registration attempt failed - user already exists: {Email}", request.Email);
@@ -56,7 +56,7 @@ public class AuthController : ControllerBase
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
             };
 
-            var createdUser = await _userRepository.CreateUserAsync(user);
+            var createdUser = await _userRepository.CreateUserAsync(user, cancellationToken);
             var token = _jwtService.GenerateToken(createdUser);
 
             _logger.LogInformation("User registered successfully: {Email}", request.Email);
@@ -77,7 +77,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -89,7 +89,7 @@ public class AuthController : ControllerBase
                 return BadRequest("Email and password are required");
             }
 
-            var user = await _userRepository.GetUserByEmailAsync(request.Email.Trim().ToLowerInvariant());
+            var user = await _userRepository.GetUserByEmailAsync(request.Email.Trim().ToLowerInvariant(), cancellationToken);
             if (user == null)
             {
                 _logger.LogWarning("Login attempt failed - user not found: {Email}", request.Email);

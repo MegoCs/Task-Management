@@ -14,39 +14,39 @@ public class TaskRepository : ITaskRepository
         _context = context;
     }
 
-    public async Task<List<TaskItem>> GetAllTasksAsync()
+    public async Task<List<TaskItem>> GetAllTasksAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Tasks
             .Find(_ => true)
             .SortBy(t => t.Order)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<TaskItem?> GetTaskByIdAsync(string id)
+    public async Task<TaskItem?> GetTaskByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _context.Tasks
             .Find(t => t.Id == id)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<TaskItem> CreateTaskAsync(TaskItem task)
+    public async Task<TaskItem> CreateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
     {
         // Set order to be at the end of the current status column
         var maxOrder = await _context.Tasks
             .Find(t => t.Status == task.Status)
             .SortByDescending(t => t.Order)
             .Project(t => t.Order)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         task.Order = maxOrder + 1;
         task.CreatedAt = DateTime.UtcNow;
         task.UpdatedAt = DateTime.UtcNow;
 
-        await _context.Tasks.InsertOneAsync(task);
+        await _context.Tasks.InsertOneAsync(task, cancellationToken: cancellationToken);
         return task;
     }
 
-    public async Task<TaskItem?> UpdateTaskAsync(string id, TaskItem task)
+    public async Task<TaskItem?> UpdateTaskAsync(string id, TaskItem task, CancellationToken cancellationToken = default)
     {
         task.UpdatedAt = DateTime.UtcNow;
         
@@ -55,33 +55,33 @@ public class TaskRepository : ITaskRepository
             task.CompletedAt = DateTime.UtcNow;
         }
 
-        var result = await _context.Tasks.ReplaceOneAsync(t => t.Id == id, task);
+        var result = await _context.Tasks.ReplaceOneAsync(t => t.Id == id, task, cancellationToken: cancellationToken);
         return result.ModifiedCount > 0 ? task : null;
     }
 
-    public async Task<bool> DeleteTaskAsync(string id)
+    public async Task<bool> DeleteTaskAsync(string id, CancellationToken cancellationToken = default)
     {
-        var result = await _context.Tasks.DeleteOneAsync(t => t.Id == id);
+        var result = await _context.Tasks.DeleteOneAsync(t => t.Id == id, cancellationToken);
         return result.DeletedCount > 0;
     }
 
-    public async Task<List<TaskItem>> GetTasksByStatusAsync(Domain.Entities.TaskStatus status)
+    public async Task<List<TaskItem>> GetTasksByStatusAsync(Domain.Entities.TaskStatus status, CancellationToken cancellationToken = default)
     {
         return await _context.Tasks
             .Find(t => t.Status == status)
             .SortBy(t => t.Order)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<TaskItem>> GetTasksByAssigneeAsync(string assigneeId)
+    public async Task<List<TaskItem>> GetTasksByAssigneeAsync(string assigneeId, CancellationToken cancellationToken = default)
     {
         return await _context.Tasks
             .Find(t => t.AssigneeId == assigneeId)
             .SortBy(t => t.Order)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> UpdateTaskOrderAsync(string id, int newOrder, Domain.Entities.TaskStatus? newStatus = null)
+    public async Task<bool> UpdateTaskOrderAsync(string id, int newOrder, Domain.Entities.TaskStatus? newStatus = null, CancellationToken cancellationToken = default)
     {
         var update = Builders<TaskItem>.Update
             .Set(t => t.Order, newOrder)
@@ -97,11 +97,11 @@ public class TaskRepository : ITaskRepository
             }
         }
 
-        var result = await _context.Tasks.UpdateOneAsync(t => t.Id == id, update);
+        var result = await _context.Tasks.UpdateOneAsync(t => t.Id == id, update, cancellationToken: cancellationToken);
         return result.ModifiedCount > 0;
     }
 
-    public async Task<List<TaskItem>> GetTasksDueSoonAsync(TimeSpan timespan)
+    public async Task<List<TaskItem>> GetTasksDueSoonAsync(TimeSpan timespan, CancellationToken cancellationToken = default)
     {
         var cutoffTime = DateTime.UtcNow.Add(timespan);
         
@@ -110,6 +110,6 @@ public class TaskRepository : ITaskRepository
                       t.DueDate.Value <= cutoffTime && 
                       t.DueDate.Value > DateTime.UtcNow &&
                       t.Status != Domain.Entities.TaskStatus.Done)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }

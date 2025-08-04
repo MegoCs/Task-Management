@@ -41,6 +41,8 @@ builder.Services.AddApplicationServices();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMessagePublisher, MessagePublisher>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddHttpContextAccessor();
 
 // Configure MassTransit with RabbitMQ
 builder.Services.AddMassTransit(x =>

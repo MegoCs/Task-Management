@@ -14,18 +14,18 @@ public class NotificationService : INotificationService
         _hubContext = hubContext;
     }
 
-    public async Task NotifyTaskCreatedAsync(TaskResponse task)
+    public async Task NotifyTaskCreatedAsync(TaskResponse task, CancellationToken cancellationToken = default)
     {
-        await _hubContext.Clients.All.SendAsync("TaskCreated", task);
+        await _hubContext.Clients.All.SendAsync("TaskCreated", task, cancellationToken);
     }
 
-    public async Task NotifyTaskUpdatedAsync(TaskResponse task)
+    public async Task NotifyTaskUpdatedAsync(TaskResponse task, CancellationToken cancellationToken = default)
     {
-        await _hubContext.Clients.All.SendAsync("TaskUpdated", task);
+        await _hubContext.Clients.All.SendAsync("TaskUpdated", task, cancellationToken);
     }
 
-    public async Task NotifyTaskDeletedAsync(string taskId)
+    public async Task NotifyTaskDeletedAsync(string taskId, CancellationToken cancellationToken = default)
     {
-        await _hubContext.Clients.All.SendAsync("TaskDeleted", taskId);
+        await _hubContext.Clients.All.SendAsync("TaskDeleted", taskId, cancellationToken);
     }
 }

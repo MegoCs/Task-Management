@@ -4,11 +4,11 @@ namespace TaskManagement.Application.Interfaces;
 
 public interface ITaskService
 {
-    Task<List<TaskResponse>> GetAllTasksAsync();
-    Task<TaskResponse?> GetTaskByIdAsync(string id);
-    Task<TaskResponse> CreateTaskAsync(CreateTaskRequest request, string createdById);
-    Task<TaskResponse?> UpdateTaskAsync(string id, UpdateTaskRequest request, string userId);
-    Task<bool> DeleteTaskAsync(string id, string userId);
-    Task<bool> UpdateTaskOrderAsync(UpdateTaskOrderRequest request, string userId);
-    Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName);
+    Task<List<TaskResponse>> GetAllTasksAsync(CancellationToken cancellationToken = default);
+    Task<TaskResponse?> GetTaskByIdAsync(string id, CancellationToken cancellationToken = default);
+    Task<TaskResponse> CreateTaskAsync(CreateTaskRequest request, string createdById, CancellationToken cancellationToken = default);
+    Task<TaskResponse?> UpdateTaskAsync(string id, UpdateTaskRequest request, string userId, CancellationToken cancellationToken = default);
+    Task<bool> DeleteTaskAsync(string id, string userId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateTaskOrderAsync(UpdateTaskOrderRequest request, string userId, CancellationToken cancellationToken = default);
+    Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName, CancellationToken cancellationToken = default);
 }

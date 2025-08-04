@@ -5,8 +5,8 @@ namespace TaskManagement.Infrastructure.Messaging;
 
 public interface IMessagePublisher
 {
-    Task PublishTaskReminderAsync(TaskReminderMessage message);
-    Task PublishTaskUpdateAsync(TaskUpdateMessage message);
+    Task PublishTaskReminderAsync(TaskReminderMessage message, CancellationToken cancellationToken = default);
+    Task PublishTaskUpdateAsync(TaskUpdateMessage message, CancellationToken cancellationToken = default);
 }
 
 public class MessagePublisher : IMessagePublisher
@@ -20,11 +20,11 @@ public class MessagePublisher : IMessagePublisher
         _logger = logger;
     }
 
-    public async Task PublishTaskReminderAsync(TaskReminderMessage message)
+    public async Task PublishTaskReminderAsync(TaskReminderMessage message, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _publishEndpoint.Publish(message);
+            await _publishEndpoint.Publish(message, cancellationToken);
             _logger.LogInformation("Published task reminder for task {TaskId}", message.TaskId);
         }
         catch (Exception ex)
@@ -34,11 +34,11 @@ public class MessagePublisher : IMessagePublisher
         }
     }
 
-    public async Task PublishTaskUpdateAsync(TaskUpdateMessage message)
+    public async Task PublishTaskUpdateAsync(TaskUpdateMessage message, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _publishEndpoint.Publish(message);
+            await _publishEndpoint.Publish(message, cancellationToken);
             _logger.LogInformation("Published task update for task {TaskId}", message.TaskId);
         }
         catch (Exception ex)

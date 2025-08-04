@@ -9,8 +9,8 @@ namespace TaskManagement.Infrastructure.Services;
 
 public interface IEmailService
 {
-    Task SendTaskReminderAsync(string toEmail, string toName, string taskTitle, DateTime dueDate);
-    Task SendTaskAssignmentAsync(string toEmail, string toName, string taskTitle, string assignedBy);
+    Task SendTaskReminderAsync(string toEmail, string toName, string taskTitle, DateTime dueDate, CancellationToken cancellationToken = default);
+    Task SendTaskAssignmentAsync(string toEmail, string toName, string taskTitle, string assignedBy, CancellationToken cancellationToken = default);
 }
 
 public class EmailService : IEmailService
@@ -24,7 +24,7 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendTaskReminderAsync(string toEmail, string toName, string taskTitle, DateTime dueDate)
+    public async Task SendTaskReminderAsync(string toEmail, string toName, string taskTitle, DateTime dueDate, CancellationToken cancellationToken = default)
     {
         var subject = $"Task Reminder: {taskTitle}";
         var body = $@"
@@ -39,10 +39,10 @@ public class EmailService : IEmailService
             </body>
             </html>";
 
-        await SendEmailAsync(toEmail, toName, subject, body);
+        await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
     }
 
-    public async Task SendTaskAssignmentAsync(string toEmail, string toName, string taskTitle, string assignedBy)
+    public async Task SendTaskAssignmentAsync(string toEmail, string toName, string taskTitle, string assignedBy, CancellationToken cancellationToken = default)
     {
         var subject = $"New Task Assigned: {taskTitle}";
         var body = $@"
@@ -57,10 +57,10 @@ public class EmailService : IEmailService
             </body>
             </html>";
 
-        await SendEmailAsync(toEmail, toName, subject, body);
+        await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
     }
 
-    private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
+    private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -78,15 +78,15 @@ public class EmailService : IEmailService
             using var client = new SmtpClient();
             
             await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, 
-                _smtpSettings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+                _smtpSettings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None, cancellationToken);
             
             if (!string.IsNullOrEmpty(_smtpSettings.Username))
             {
-                await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password);
+                await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password, cancellationToken);
             }
 
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            await client.SendAsync(message, cancellationToken);
+            await client.DisconnectAsync(true, cancellationToken);
 
             _logger.LogInformation("Email sent successfully to {Email} with subject '{Subject}'", toEmail, subject);
         }

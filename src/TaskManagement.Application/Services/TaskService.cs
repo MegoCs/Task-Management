@@ -25,19 +25,19 @@ public class TaskService : ITaskService
         _notificationService = notificationService;
     }
 
-    public async Task<List<TaskResponse>> GetAllTasksAsync()
+    public async Task<List<TaskResponse>> GetAllTasksAsync(CancellationToken cancellationToken = default)
     {
-        var tasks = await _taskRepository.GetAllTasksAsync();
+        var tasks = await _taskRepository.GetAllTasksAsync(cancellationToken);
         return tasks.Select(MapToResponse).ToList();
     }
 
-    public async Task<TaskResponse?> GetTaskByIdAsync(string id)
+    public async Task<TaskResponse?> GetTaskByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var task = await _taskRepository.GetTaskByIdAsync(id);
+        var task = await _taskRepository.GetTaskByIdAsync(id, cancellationToken);
         return task != null ? MapToResponse(task) : null;
     }
 
-    public async Task<TaskResponse> CreateTaskAsync(CreateTaskRequest request, string createdById)
+    public async Task<TaskResponse> CreateTaskAsync(CreateTaskRequest request, string createdById, CancellationToken cancellationToken = default)
     {
         var task = new TaskItem
         {
@@ -53,7 +53,7 @@ public class TaskService : ITaskService
         // Set assignee if provided
         if (!string.IsNullOrEmpty(request.AssigneeEmail))
         {
-            var assignee = await _userRepository.GetUserByEmailAsync(request.AssigneeEmail);
+            var assignee = await _userRepository.GetUserByEmailAsync(request.AssigneeEmail, cancellationToken);
             if (assignee != null)
             {
                 task.AssigneeId = assignee.Id;
@@ -61,7 +61,7 @@ public class TaskService : ITaskService
             }
         }
 
-        var createdTask = await _taskRepository.CreateTaskAsync(task);
+        var createdTask = await _taskRepository.CreateTaskAsync(task, cancellationToken);
         var response = MapToResponse(createdTask);
 
         // Publish task creation event
@@ -71,7 +71,7 @@ public class TaskService : ITaskService
             Action = "Created",
             UserId = createdById,
             Data = response
-        });
+        }, cancellationToken);
 
         // Schedule reminder if due date is set
         if (createdTask.DueDate.HasValue && !string.IsNullOrEmpty(createdTask.AssigneeEmail))
@@ -87,19 +87,19 @@ public class TaskService : ITaskService
                     AssigneeName = createdTask.AssigneeEmail, // Could be improved with actual name
                     DueDate = createdTask.DueDate.Value,
                     ScheduledFor = reminderTime
-                });
+                }, cancellationToken);
             }
         }
 
         // Notify clients via SignalR
-        await _notificationService.NotifyTaskCreatedAsync(response);
+        await _notificationService.NotifyTaskCreatedAsync(response, cancellationToken);
 
         return response;
     }
 
-    public async Task<TaskResponse?> UpdateTaskAsync(string id, UpdateTaskRequest request, string userId)
+    public async Task<TaskResponse?> UpdateTaskAsync(string id, UpdateTaskRequest request, string userId, CancellationToken cancellationToken = default)
     {
-        var existingTask = await _taskRepository.GetTaskByIdAsync(id);
+        var existingTask = await _taskRepository.GetTaskByIdAsync(id, cancellationToken);
         if (existingTask == null) return null;
 
         // Update fields if provided
@@ -124,7 +124,7 @@ public class TaskService : ITaskService
         // Handle assignee change
         if (!string.IsNullOrEmpty(request.AssigneeEmail))
         {
-            var assignee = await _userRepository.GetUserByEmailAsync(request.AssigneeEmail);
+            var assignee = await _userRepository.GetUserByEmailAsync(request.AssigneeEmail, cancellationToken);
             if (assignee != null)
             {
                 existingTask.AssigneeId = assignee.Id;
@@ -132,7 +132,7 @@ public class TaskService : ITaskService
             }
         }
 
-        var updatedTask = await _taskRepository.UpdateTaskAsync(id, existingTask);
+        var updatedTask = await _taskRepository.UpdateTaskAsync(id, existingTask, cancellationToken);
         if (updatedTask == null) return null;
 
         var response = MapToResponse(updatedTask);
@@ -144,17 +144,17 @@ public class TaskService : ITaskService
             Action = "Updated",
             UserId = userId,
             Data = response
-        });
+        }, cancellationToken);
 
         // Notify clients via SignalR
-        await _notificationService.NotifyTaskUpdatedAsync(response);
+        await _notificationService.NotifyTaskUpdatedAsync(response, cancellationToken);
 
         return response;
     }
 
-    public async Task<bool> DeleteTaskAsync(string id, string userId)
+    public async Task<bool> DeleteTaskAsync(string id, string userId, CancellationToken cancellationToken = default)
     {
-        var success = await _taskRepository.DeleteTaskAsync(id);
+        var success = await _taskRepository.DeleteTaskAsync(id, cancellationToken);
         
         if (success)
         {
@@ -164,25 +164,26 @@ public class TaskService : ITaskService
                 TaskId = id,
                 Action = "Deleted",
                 UserId = userId
-            });
+            }, cancellationToken);
 
             // Notify clients via SignalR
-            await _notificationService.NotifyTaskDeletedAsync(id);
+            await _notificationService.NotifyTaskDeletedAsync(id, cancellationToken);
         }
 
         return success;
     }
 
-    public async Task<bool> UpdateTaskOrderAsync(UpdateTaskOrderRequest request, string userId)
+    public async Task<bool> UpdateTaskOrderAsync(UpdateTaskOrderRequest request, string userId, CancellationToken cancellationToken = default)
     {
         var success = await _taskRepository.UpdateTaskOrderAsync(
             request.TaskId, 
             request.NewOrder, 
-            request.NewStatus.HasValue ? (Domain.Entities.TaskStatus)request.NewStatus.Value : null);
+            request.NewStatus.HasValue ? (Domain.Entities.TaskStatus)request.NewStatus.Value : null,
+            cancellationToken);
 
         if (success)
         {
-            var updatedTask = await _taskRepository.GetTaskByIdAsync(request.TaskId);
+            var updatedTask = await _taskRepository.GetTaskByIdAsync(request.TaskId, cancellationToken);
             if (updatedTask != null)
             {
                 var response = MapToResponse(updatedTask);
@@ -194,19 +195,19 @@ public class TaskService : ITaskService
                     Action = "OrderChanged",
                     UserId = userId,
                     Data = response
-                });
+                }, cancellationToken);
 
                 // Notify clients via SignalR
-                await _notificationService.NotifyTaskUpdatedAsync(response);
+                await _notificationService.NotifyTaskUpdatedAsync(response, cancellationToken);
             }
         }
 
         return success;
     }
 
-    public async Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName)
+    public async Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName, CancellationToken cancellationToken = default)
     {
-        var task = await _taskRepository.GetTaskByIdAsync(taskId);
+        var task = await _taskRepository.GetTaskByIdAsync(taskId, cancellationToken);
         if (task == null) return null;
 
         var comment = new TaskComment
@@ -220,13 +221,13 @@ public class TaskService : ITaskService
         task.Comments.Add(comment);
         task.UpdatedAt = DateTime.UtcNow;
 
-        var updatedTask = await _taskRepository.UpdateTaskAsync(taskId, task);
+        var updatedTask = await _taskRepository.UpdateTaskAsync(taskId, task, cancellationToken);
         if (updatedTask == null) return null;
 
         var response = MapToResponse(updatedTask);
 
         // Notify clients via SignalR
-        await _notificationService.NotifyTaskUpdatedAsync(response);
+        await _notificationService.NotifyTaskUpdatedAsync(response, cancellationToken);
 
         return response;
     }
