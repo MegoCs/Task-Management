@@ -88,8 +88,8 @@ public class TaskService : ITaskService
         // Schedule reminder if due date is set
         if (createdTask.DueDate.HasValue && !string.IsNullOrEmpty(createdTask.AssigneeEmail))
         {
-            var reminderTime = createdTask.DueDate.Value.AddHours(-24);
-            if (reminderTime > DateTime.UtcNow)
+             var reminderTime = createdTask.DueDate.Value.AddHours(-24);
+             if (reminderTime > DateTime.UtcNow)
             {
                 await _messagePublisher.PublishTaskReminderAsync(new TaskReminderMessage
                 {

@@ -100,9 +100,9 @@ services:
       - Email__SmtpServer=smtp.gmail.com
       - Email__SmtpPort=587
       - Email__EnableSsl=true
-      - Email__Username=Ahmed.Fci01@gmail.com
-      - Email__Password=AhmedOldGmailPassword
-      - Email__FromName=Task Management System
+      - Email__Username=test
+      - Email__Password=test
+      - Email__FromName=Ahmed
     depends_on:
       - mongodb
       - rabbitmq

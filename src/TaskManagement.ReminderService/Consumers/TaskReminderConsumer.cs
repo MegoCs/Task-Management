@@ -42,13 +42,18 @@ public class TaskReminderConsumer : IConsumer<TaskReminderMessage>
             }
             else
             {
-                // Schedule for later processing by redelivering the message with a delay
+                // If reminder is not due yet, just log and skip
+                // In a production system, you might want to use a proper scheduler or delay queue
                 var delay = message.ScheduledFor - DateTime.UtcNow;
-                _logger.LogInformation("Reminder for task {TaskId} scheduled for {ScheduledTime}, delaying for {Delay}", 
+                _logger.LogInformation("Reminder for task {TaskId} scheduled for {ScheduledTime}, not due yet (in {Delay})", 
                     message.TaskId, message.ScheduledFor, delay);
-
-                // Reschedule the message
-                await context.ScheduleSend(delay, message);
+                
+                // For now, we'll just return without processing
+                // In a more sophisticated setup, you could:
+                // 1. Use Quartz.NET for scheduling
+                // 2. Use Azure Service Bus scheduled messages
+                // 3. Use RabbitMQ delayed message plugin
+                // 4. Requeue with a delay using proper scheduler setup
             }
         }
         catch (Exception ex)
