@@ -1,40 +1,28 @@
-using Microsoft.AspNetCore.SignalR;
-using TaskManagement.API.Hubs;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Domain.DTOs;
 using TaskManagement.Domain.Entities;
 using TaskManagement.Infrastructure.Messaging;
 using TaskManagement.Infrastructure.Repositories.Interfaces;
 
-namespace TaskManagement.API.Services;
-
-public interface ITaskService
-{
-    Task<List<TaskResponse>> GetAllTasksAsync();
-    Task<TaskResponse?> GetTaskByIdAsync(string id);
-    Task<TaskResponse> CreateTaskAsync(CreateTaskRequest request, string createdById);
-    Task<TaskResponse?> UpdateTaskAsync(string id, UpdateTaskRequest request, string userId);
-    Task<bool> DeleteTaskAsync(string id, string userId);
-    Task<bool> UpdateTaskOrderAsync(UpdateTaskOrderRequest request, string userId);
-    Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName);
-}
+namespace TaskManagement.Application.Services;
 
 public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
     private readonly IUserRepository _userRepository;
     private readonly IMessagePublisher _messagePublisher;
-    private readonly IHubContext<TaskHub> _hubContext;
+    private readonly INotificationService _notificationService;
 
     public TaskService(
         ITaskRepository taskRepository, 
         IUserRepository userRepository,
         IMessagePublisher messagePublisher,
-        IHubContext<TaskHub> hubContext)
+        INotificationService notificationService)
     {
         _taskRepository = taskRepository;
         _userRepository = userRepository;
         _messagePublisher = messagePublisher;
-        _hubContext = hubContext;
+        _notificationService = notificationService;
     }
 
     public async Task<List<TaskResponse>> GetAllTasksAsync()
@@ -104,7 +92,7 @@ public class TaskService : ITaskService
         }
 
         // Notify clients via SignalR
-        await _hubContext.Clients.All.SendAsync("TaskCreated", response);
+        await _notificationService.NotifyTaskCreatedAsync(response);
 
         return response;
     }
@@ -159,7 +147,7 @@ public class TaskService : ITaskService
         });
 
         // Notify clients via SignalR
-        await _hubContext.Clients.All.SendAsync("TaskUpdated", response);
+        await _notificationService.NotifyTaskUpdatedAsync(response);
 
         return response;
     }
@@ -179,7 +167,7 @@ public class TaskService : ITaskService
             });
 
             // Notify clients via SignalR
-            await _hubContext.Clients.All.SendAsync("TaskDeleted", id);
+            await _notificationService.NotifyTaskDeletedAsync(id);
         }
 
         return success;
@@ -209,7 +197,7 @@ public class TaskService : ITaskService
                 });
 
                 // Notify clients via SignalR
-                await _hubContext.Clients.All.SendAsync("TaskUpdated", response);
+                await _notificationService.NotifyTaskUpdatedAsync(response);
             }
         }
 
@@ -238,7 +226,7 @@ public class TaskService : ITaskService
         var response = MapToResponse(updatedTask);
 
         // Notify clients via SignalR
-        await _hubContext.Clients.All.SendAsync("TaskUpdated", response);
+        await _notificationService.NotifyTaskUpdatedAsync(response);
 
         return response;
     }

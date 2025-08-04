@@ -4,6 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using MassTransit;
 using TaskManagement.API.Hubs;
 using TaskManagement.API.Services;
+using TaskManagement.Application.Extensions;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Infrastructure.Configuration;
 using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Messaging;
@@ -32,8 +34,11 @@ builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// Add services
-builder.Services.AddScoped<ITaskService, TaskService>();
+// Add Application layer services
+builder.Services.AddApplicationServices();
+
+// Add API layer services  
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMessagePublisher, MessagePublisher>();
 

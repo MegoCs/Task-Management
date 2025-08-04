@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TaskManagement.API.Services;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Domain.DTOs;
 
 namespace TaskManagement.API.Controllers;
