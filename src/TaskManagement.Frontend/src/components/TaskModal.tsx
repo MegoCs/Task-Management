@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TaskResponse, CreateTaskRequest, UpdateTaskRequest, apiService } from '../services/apiService';
 import './TaskModal.css';
 
@@ -33,7 +33,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
     tags: task?.tags.join(', ') || '',
   });
 
-  const [comments, setComments] = useState(task?.comments || []);
+  const comments = task?.comments || [];
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

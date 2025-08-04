@@ -110,12 +110,6 @@ function Login() {
             </button>
           </p>
         </div>
-
-        <div className="demo-credentials">
-          <h3>Demo Credentials</h3>
-          <p>Email: demo@example.com</p>
-          <p>Password: demo123</p>
-        </div>
       </div>
     </div>
   );

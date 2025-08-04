@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { TaskResponse, apiService } from '../services/apiService';
 import { useTask } from '../contexts/TaskContext';
@@ -18,11 +18,7 @@ function KanbanBoard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskResponse | undefined>();
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const tasks = await apiService.getTasks();
@@ -31,7 +27,11 @@ function KanbanBoard() {
       console.error('Error loading tasks:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load tasks' });
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
@@ -64,6 +64,21 @@ function KanbanBoard() {
       .sort((a, b) => a.order - b.order);
   };
 
+  const getTaskStatistics = () => {
+    const total = state.tasks.length;
+    const todo = state.tasks.filter(task => task.status === 0).length;
+    const inProgress = state.tasks.filter(task => task.status === 1).length;
+    const review = state.tasks.filter(task => task.status === 2).length;
+    const done = state.tasks.filter(task => task.status === 3).length;
+    const highPriority = state.tasks.filter(task => task.priority >= 2).length;
+    const overdue = state.tasks.filter(task => {
+      if (!task.dueDate) return false;
+      return new Date(task.dueDate) < new Date() && task.status !== 3;
+    }).length;
+
+    return { total, todo, inProgress, review, done, highPriority, overdue };
+  };
+
   const handleCreateTask = () => {
     setEditingTask(undefined);
     setIsModalOpen(true);
@@ -85,17 +100,57 @@ function KanbanBoard() {
   };
 
   if (state.loading) {
-    return <div className="loading">Loading tasks...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Loading your tasks...</div>
+      </div>
+    );
   }
 
   if (state.error) {
-    return <div className="error">Error: {state.error}</div>;
+    return (
+      <div className="error-container">
+        <div className="error-message">
+          <h3>Oops! Something went wrong</h3>
+          <p>{state.error}</p>
+          <button className="btn btn-primary" onClick={loadTasks}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
+
+  const stats = getTaskStatistics();
 
   return (
     <div className="kanban-board">
       <div className="board-header">
-        <h1>Task Board</h1>
+        <div className="header-left">
+          <h1>Task Board</h1>
+          <div className="board-stats">
+            <div className="stat-item">
+              <span className="stat-number">{stats.total}</span>
+              <span className="stat-label">Total Tasks</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number">{stats.done}</span>
+              <span className="stat-label">Completed</span>
+            </div>
+            {stats.overdue > 0 && (
+              <div className="stat-item warning">
+                <span className="stat-number">{stats.overdue}</span>
+                <span className="stat-label">Overdue</span>
+              </div>
+            )}
+            {stats.highPriority > 0 && (
+              <div className="stat-item priority">
+                <span className="stat-number">{stats.highPriority}</span>
+                <span className="stat-label">High Priority</span>
+              </div>
+            )}
+          </div>
+        </div>
         <button className="btn btn-primary" onClick={handleCreateTask}>
           + Add Task
         </button>
@@ -121,6 +176,17 @@ function KanbanBoard() {
                       snapshot.isDraggingOver ? 'dragging-over' : ''
                     }`}
                   >
+                    {getTasksByStatus(status.id).length === 0 && stats.total === 0 && status.id === 0 ? (
+                      <div className="empty-column-message">
+                        <p>🚀 Welcome to your task board!</p>
+                        <p>Click "Add Task" above to get started.</p>
+                      </div>
+                    ) : getTasksByStatus(status.id).length === 0 ? (
+                      <div className="empty-column">
+                        <p>No tasks in {status.title.toLowerCase()}</p>
+                      </div>
+                    ) : null}
+                    
                     {getTasksByStatus(status.id).map((task, index) => (
                       <Draggable
                         key={task.id}
