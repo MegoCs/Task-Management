@@ -6,11 +6,11 @@ using TaskManagement.API.Hubs;
 using TaskManagement.API.Services;
 using TaskManagement.Application.Extensions;
 using TaskManagement.Application.Interfaces;
+using TaskManagement.Domain.Interfaces;
 using TaskManagement.Infrastructure.Configuration;
 using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Messaging;
 using TaskManagement.Infrastructure.Repositories;
-using TaskManagement.Infrastructure.Repositories.Interfaces;
 using TaskManagement.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);

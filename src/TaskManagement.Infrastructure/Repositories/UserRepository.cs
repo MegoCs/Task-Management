@@ -1,7 +1,7 @@
 using MongoDB.Driver;
 using TaskManagement.Domain.Entities;
+using TaskManagement.Domain.Interfaces;
 using TaskManagement.Infrastructure.Data;
-using TaskManagement.Infrastructure.Repositories.Interfaces;
 
 namespace TaskManagement.Infrastructure.Repositories;
 

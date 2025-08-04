@@ -1,4 +1,5 @@
 using MassTransit;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Infrastructure.Configuration;
 using TaskManagement.Infrastructure.Services;
 using TaskManagement.ReminderService.Consumers;

@@ -1,7 +1,8 @@
 using MongoDB.Driver;
 using TaskManagement.Domain.Entities;
+using TaskManagement.Domain.Interfaces;
 using TaskManagement.Infrastructure.Data;
-using TaskManagement.Infrastructure.Repositories.Interfaces;
+using DomainTaskStatus = TaskManagement.Domain.Entities.TaskStatus;
 
 namespace TaskManagement.Infrastructure.Repositories;
 
@@ -18,7 +19,8 @@ public class TaskRepository : ITaskRepository
     {
         return await _context.Tasks
             .Find(_ => true)
-            .SortBy(t => t.Order)
+            .SortBy(t => t.Status)
+            .ThenBy(t => t.Order)
             .ToListAsync(cancellationToken);
     }
 
@@ -50,7 +52,7 @@ public class TaskRepository : ITaskRepository
     {
         task.UpdatedAt = DateTime.UtcNow;
         
-        if (task.Status == Domain.Entities.TaskStatus.Done && task.CompletedAt == null)
+        if (task.Status == DomainTaskStatus.Done && task.CompletedAt == null)
         {
             task.CompletedAt = DateTime.UtcNow;
         }
@@ -65,7 +67,7 @@ public class TaskRepository : ITaskRepository
         return result.DeletedCount > 0;
     }
 
-    public async Task<List<TaskItem>> GetTasksByStatusAsync(Domain.Entities.TaskStatus status, CancellationToken cancellationToken = default)
+    public async Task<List<TaskItem>> GetTasksByStatusAsync(DomainTaskStatus status, CancellationToken cancellationToken = default)
     {
         return await _context.Tasks
             .Find(t => t.Status == status)
@@ -81,7 +83,7 @@ public class TaskRepository : ITaskRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> UpdateTaskOrderAsync(string id, int newOrder, Domain.Entities.TaskStatus? newStatus = null, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateTaskOrderAsync(string id, int newOrder, DomainTaskStatus? newStatus = null, CancellationToken cancellationToken = default)
     {
         var update = Builders<TaskItem>.Update
             .Set(t => t.Order, newOrder)
@@ -91,13 +93,17 @@ public class TaskRepository : ITaskRepository
         {
             update = update.Set(t => t.Status, newStatus.Value);
             
-            if (newStatus.Value == Domain.Entities.TaskStatus.Done)
+            if (newStatus.Value == DomainTaskStatus.Done)
             {
                 update = update.Set(t => t.CompletedAt, DateTime.UtcNow);
             }
         }
 
-        var result = await _context.Tasks.UpdateOneAsync(t => t.Id == id, update, cancellationToken: cancellationToken);
+        var result = await _context.Tasks.UpdateOneAsync(
+            t => t.Id == id, 
+            update, 
+            cancellationToken: cancellationToken);
+            
         return result.ModifiedCount > 0;
     }
 
@@ -109,7 +115,7 @@ public class TaskRepository : ITaskRepository
             .Find(t => t.DueDate.HasValue && 
                       t.DueDate.Value <= cutoffTime && 
                       t.DueDate.Value > DateTime.UtcNow &&
-                      t.Status != Domain.Entities.TaskStatus.Done)
+                      t.Status != DomainTaskStatus.Done)
             .ToListAsync(cancellationToken);
     }
 }

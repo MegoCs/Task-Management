@@ -14,7 +14,8 @@ type TaskAction =
   | { type: 'ADD_TASK'; payload: TaskResponse }
   | { type: 'UPDATE_TASK'; payload: TaskResponse }
   | { type: 'DELETE_TASK'; payload: string }
-  | { type: 'SET_ERROR'; payload: string | null };
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'NORMALIZE_ORDERS' };
 
 const initialState: TaskState = {
   tasks: [],
@@ -31,16 +32,59 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
     case 'ADD_TASK':
       return { ...state, tasks: [...state.tasks, action.payload] };
     case 'UPDATE_TASK':
+      const updatedTasks = state.tasks.map(task =>
+        task.id === action.payload.id ? action.payload : task
+      );
+      
+      // Sort tasks to maintain proper order within each status
+      const sortedTasks = updatedTasks.sort((a, b) => {
+        if (a.status !== b.status) {
+          return a.status - b.status;
+        }
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+      
       return {
         ...state,
-        tasks: state.tasks.map(task =>
-          task.id === action.payload.id ? action.payload : task
-        ),
+        tasks: sortedTasks,
       };
     case 'DELETE_TASK':
       return {
         ...state,
         tasks: state.tasks.filter(task => task.id !== action.payload),
+      };
+    case 'NORMALIZE_ORDERS':
+      // Group tasks by status and normalize their orders
+      const tasksByStatus = state.tasks.reduce((acc, task) => {
+        if (!acc[task.status]) {
+          acc[task.status] = [];
+        }
+        acc[task.status].push(task);
+        return acc;
+      }, {} as Record<number, TaskResponse[]>);
+
+      // Normalize orders within each status
+      const normalizedTasks: TaskResponse[] = [];
+      Object.keys(tasksByStatus).forEach(statusKey => {
+        const status = parseInt(statusKey);
+        const tasksInStatus = tasksByStatus[status]
+          .sort((a, b) => {
+            if (a.order !== b.order) {
+              return a.order - b.order;
+            }
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          })
+          .map((task, index) => ({ ...task, order: index }));
+        
+        normalizedTasks.push(...tasksInStatus);
+      });
+
+      return {
+        ...state,
+        tasks: normalizedTasks,
       };
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false };

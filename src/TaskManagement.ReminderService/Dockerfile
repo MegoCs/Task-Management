@@ -6,10 +6,12 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ["TaskManagement.ReminderService/TaskManagement.ReminderService.csproj", "TaskManagement.ReminderService/"]
 COPY ["TaskManagement.Infrastructure/TaskManagement.Infrastructure.csproj", "TaskManagement.Infrastructure/"]
+COPY ["TaskManagement.Application/TaskManagement.Application.csproj", "TaskManagement.Application/"]
 COPY ["TaskManagement.Domain/TaskManagement.Domain.csproj", "TaskManagement.Domain/"]
 RUN dotnet restore "TaskManagement.ReminderService/TaskManagement.ReminderService.csproj"
 COPY TaskManagement.ReminderService/ TaskManagement.ReminderService/
 COPY TaskManagement.Infrastructure/ TaskManagement.Infrastructure/
+COPY TaskManagement.Application/ TaskManagement.Application/
 COPY TaskManagement.Domain/ TaskManagement.Domain/
 WORKDIR "/src/TaskManagement.ReminderService"
 RUN dotnet build "TaskManagement.ReminderService.csproj" -c Release -o /app/build

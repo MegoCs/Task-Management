@@ -1,8 +1,8 @@
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using TaskManagement.Infrastructure.Messaging;
-using TaskManagement.Infrastructure.Services;
+using TaskManagement.Domain.Messages;
+using TaskManagement.Application.Interfaces;
 
 namespace TaskManagement.ReminderService.Consumers;
 

@@ -6,6 +6,11 @@
   border-left: 4px solid #e9ecef;
   transition: all 0.2s ease;
   cursor: pointer;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .task-card:hover {

@@ -1,8 +1,9 @@
 using TaskManagement.Application.Interfaces;
 using TaskManagement.Domain.DTOs;
 using TaskManagement.Domain.Entities;
-using TaskManagement.Infrastructure.Messaging;
-using TaskManagement.Infrastructure.Repositories.Interfaces;
+using TaskManagement.Domain.Interfaces;
+using TaskManagement.Domain.Messages;
+using DomainTaskStatus = TaskManagement.Domain.Entities.TaskStatus;
 
 namespace TaskManagement.Application.Services;
 
@@ -47,7 +48,7 @@ public class TaskService : ITaskService
             DueDate = request.DueDate,
             Priority = (TaskPriority)request.Priority,
             Tags = request.Tags,
-            Status = Domain.Entities.TaskStatus.Todo
+            Status = DomainTaskStatus.Todo
         };
 
         // Set assignee if provided
@@ -116,7 +117,7 @@ public class TaskService : ITaskService
             existingTask.Priority = (TaskPriority)request.Priority.Value;
 
         if (request.Status.HasValue)
-            existingTask.Status = (Domain.Entities.TaskStatus)request.Status.Value;
+            existingTask.Status = (DomainTaskStatus)request.Status.Value;
 
         if (request.Tags != null)
             existingTask.Tags = request.Tags;
@@ -178,7 +179,7 @@ public class TaskService : ITaskService
         var success = await _taskRepository.UpdateTaskOrderAsync(
             request.TaskId, 
             request.NewOrder, 
-            request.NewStatus.HasValue ? (Domain.Entities.TaskStatus)request.NewStatus.Value : null,
+            request.NewStatus.HasValue ? (DomainTaskStatus)request.NewStatus.Value : null,
             cancellationToken);
 
         if (success)

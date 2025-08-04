@@ -46,22 +46,163 @@ function KanbanBoard() {
     }
 
     const newStatus = parseInt(destination.droppableId);
-    const newOrder = destination.index;
+    const oldStatus = parseInt(source.droppableId);
+    const newIndex = destination.index;
+
+    console.log('Drag operation:', {
+      taskId: draggableId,
+      oldStatus,
+      newStatus,
+      oldIndex: source.index,
+      newIndex: newIndex
+    });
+
+    // Find the task being moved
+    const taskToMove = state.tasks.find(task => task.id === draggableId);
+    if (!taskToMove) {
+      console.error('Task not found:', draggableId);
+      return;
+    }
+
+    // Create a copy of all tasks for manipulation
+    let updatedTasks = [...state.tasks];
+    
+    // If moving within the same column
+    if (oldStatus === newStatus) {
+      // Get all tasks in the same column, sorted by current order
+      const tasksInColumn = updatedTasks
+        .filter(task => task.status === newStatus)
+        .sort((a, b) => a.order - b.order);
+
+      console.log('Before reorder:', tasksInColumn.map(t => ({ id: t.id, title: t.title, order: t.order })));
+
+      // Find the task to move
+      const taskIndex = tasksInColumn.findIndex(task => task.id === draggableId);
+      if (taskIndex >= 0) {
+        // Remove the task from its current position
+        const [movedTask] = tasksInColumn.splice(taskIndex, 1);
+        
+        // Insert the task at the new position
+        tasksInColumn.splice(newIndex, 0, movedTask);
+        
+        // Reassign order values based on new positions
+        tasksInColumn.forEach((task, index) => {
+          task.order = index;
+        });
+
+        console.log('After reorder:', tasksInColumn.map(t => ({ id: t.id, title: t.title, order: t.order })));
+
+        // Update the main tasks array with the reordered tasks
+        updatedTasks = updatedTasks.map(task => {
+          if (task.status === newStatus) {
+            const reorderedTask = tasksInColumn.find(t => t.id === task.id);
+            return reorderedTask || task;
+          }
+          return task;
+        });
+      }
+    } else {
+      // Moving between different columns
+      
+      // Get tasks in destination column to determine correct insertion point
+      const destTasks = updatedTasks
+        .filter(task => task.status === newStatus && task.id !== draggableId)
+        .sort((a, b) => a.order - b.order);
+
+      // Insert the moved task at the correct position
+      destTasks.splice(newIndex, 0, { ...taskToMove, status: newStatus, order: newIndex });
+
+      // Reassign order values for destination column
+      destTasks.forEach((task, index) => {
+        task.order = index;
+      });
+
+      // Reorder tasks in the source column (close gaps)
+      const sourceTasks = updatedTasks
+        .filter(task => task.status === oldStatus && task.id !== draggableId)
+        .sort((a, b) => a.order - b.order);
+
+      sourceTasks.forEach((task, index) => {
+        task.order = index;
+      });
+
+      // Update the main tasks array
+      updatedTasks = updatedTasks.map(task => {
+        if (task.id === draggableId) {
+          // Find the moved task in destTasks
+          const movedTask = destTasks.find(t => t.id === task.id);
+          return movedTask || task;
+        }
+        if (task.status === newStatus) {
+          const updatedTask = destTasks.find(t => t.id === task.id);
+          return updatedTask || task;
+        }
+        if (task.status === oldStatus) {
+          const updatedTask = sourceTasks.find(t => t.id === task.id);
+          return updatedTask || task;
+        }
+        return task;
+      });
+    }
+
+    // Update the state optimistically
+    dispatch({ type: 'SET_TASKS', payload: updatedTasks });
 
     try {
+      // Use the new order from the reordered task
+      const reorderedTask = updatedTasks.find(t => t.id === draggableId);
+      const finalOrder = reorderedTask ? reorderedTask.order : newIndex;
+      
       await apiService.updateTaskOrder(draggableId, {
-        newOrder,
-        newStatus: newStatus !== parseInt(source.droppableId) ? newStatus : undefined,
+        newOrder: finalOrder,
+        newStatus: newStatus !== oldStatus ? newStatus : undefined,
       });
+      
+      console.log('Task order updated successfully');
+      
+      // Optionally reload tasks to ensure backend consistency
+      // Commented out to improve UX, but can be enabled for debugging
+      // setTimeout(() => loadTasks(), 500);
+      
     } catch (error) {
       console.error('Error updating task order:', error);
+      // Revert the optimistic update by reloading tasks
+      await loadTasks();
     }
   };
 
   const getTasksByStatus = (status: number) => {
-    return state.tasks
+    const tasksInStatus = state.tasks
       .filter(task => task.status === status)
-      .sort((a, b) => a.order - b.order);
+      .sort((a, b) => {
+        // Primary sort by order
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+        // Secondary sort by creation date for stability
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+
+    // Debug logging (can be removed in production)
+    if (tasksInStatus.length > 1) {
+      console.log(`Tasks in status ${status}:`, tasksInStatus.map(t => ({ id: t.id, title: t.title, order: t.order })));
+    }
+
+    // Ensure orders are sequential (fix any gaps) - but don't modify the original objects
+    return tasksInStatus.map((task, index) => ({
+      ...task,
+      // Don't override the order here, let the drag handler manage it
+      // order: index
+    }));
+  };
+
+  const debugTaskOrders = () => {
+    console.log('=== Task Order Debug ===');
+    TASK_STATUSES.forEach(status => {
+      const tasks = getTasksByStatus(status.id);
+      console.log(`${status.title} (${status.id}):`, tasks.map(t => `${t.title}(${t.order})`).join(', '));
+    });
+    console.log('======================');
   };
 
   const getTaskStatistics = () => {
@@ -151,9 +292,16 @@ function KanbanBoard() {
             )}
           </div>
         </div>
-        <button className="btn add-task-btn" onClick={handleCreateTask}>
-          ✨ Add Task
-        </button>
+        <div className="header-actions">
+          {process.env.NODE_ENV === 'development' && (
+            <button className="btn btn-secondary" onClick={debugTaskOrders} style={{ marginRight: '10px' }}>
+              🐛 Debug Orders
+            </button>
+          )}
+          <button className="btn add-task-btn" onClick={handleCreateTask}>
+            ✨ Add Task
+          </button>
+        </div>
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>

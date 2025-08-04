@@ -1,7 +1,7 @@
 using TaskManagement.Infrastructure.Configuration;
 using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Repositories;
-using TaskManagement.Infrastructure.Repositories.Interfaces;
+using TaskManagement.Domain.Interfaces;
 using TaskManagement.AuthService.Services;
 
 var builder = WebApplication.CreateBuilder(args);

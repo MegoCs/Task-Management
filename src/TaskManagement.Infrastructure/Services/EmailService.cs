@@ -3,15 +3,10 @@ using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Infrastructure.Configuration;
 
 namespace TaskManagement.Infrastructure.Services;
-
-public interface IEmailService
-{
-    Task SendTaskReminderAsync(string toEmail, string toName, string taskTitle, DateTime dueDate, CancellationToken cancellationToken = default);
-    Task SendTaskAssignmentAsync(string toEmail, string toName, string taskTitle, string assignedBy, CancellationToken cancellationToken = default);
-}
 
 public class EmailService : IEmailService
 {

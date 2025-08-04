@@ -28,4 +28,9 @@ public class NotificationService : INotificationService
     {
         await _hubContext.Clients.All.SendAsync("TaskDeleted", taskId, cancellationToken);
     }
+
+    public async Task NotifyTaskAssignedAsync(TaskResponse task, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients.All.SendAsync("TaskAssigned", task, cancellationToken);
+    }
 }

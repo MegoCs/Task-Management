@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TaskManagement.AuthService.Services;
 using TaskManagement.Domain.DTOs;
 using TaskManagement.Domain.Entities;
-using TaskManagement.Infrastructure.Repositories.Interfaces;
+using TaskManagement.Domain.Interfaces;
 using BCrypt.Net;
 
 namespace TaskManagement.AuthService.Controllers;

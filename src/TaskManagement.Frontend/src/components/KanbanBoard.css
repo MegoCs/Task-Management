@@ -30,6 +30,10 @@
   padding: 15px;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .column-header {
@@ -59,8 +63,12 @@
 .column-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden !important;
   min-height: 100px;
   transition: background-color 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .column-content.dragging-over {
@@ -69,13 +77,64 @@
   border-radius: 4px;
 }
 
+/* Comprehensive drag and drop overflow prevention */
+.kanban-board [data-rbd-droppable-id] {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+.kanban-board [data-rbd-droppable-context-id] {
+  overflow-x: hidden !important;
+}
+
+.kanban-board [data-rbd-drag-handle-draggable-id] {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Prevent scrollbar during any drag operation */
+.kanban-board * {
+  box-sizing: border-box;
+}
+
+.kanban-board *:not(.task-item.dragging) {
+  max-width: 100% !important;
+}
+
+/* React Beautiful DND specific overrides */
+[data-rbd-droppable-id] {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+[data-rbd-drag-handle-context-id] {
+  overflow-x: hidden !important;
+}
+
+/* When dragging is active, prevent any horizontal overflow */
+body[style*="cursor"] .column-content,
+body[data-rbd-drag-handle-context-id] .column-content {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 .task-item {
   margin-bottom: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .task-item.dragging {
   transform: rotate(5deg);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  width: 280px;
+  max-width: 280px;
+  z-index: 1000;
+  overflow: hidden;
 }
 
 .loading {
@@ -246,6 +305,12 @@
   margin: 0 0 15px 0;
   font-size: 1.8rem;
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .board-stats {
