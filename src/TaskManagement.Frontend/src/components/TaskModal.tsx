@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TaskResponse, CreateTaskRequest, UpdateTaskRequest, apiService } from '../services/apiService';
+import { TaskResponse, CreateTaskRequest, UpdateTaskRequest, TaskCommentResponse, apiService } from '../services/apiService';
 import './TaskModal.css';
 
 interface TaskModalProps {
@@ -7,6 +7,150 @@ interface TaskModalProps {
   onClose: () => void;
   onSave: () => void;
 }
+
+interface CommentProps {
+  comment: TaskCommentResponse;
+  onReply: (commentId: string) => void;
+  replyingTo: string | null;
+  replyContent: string;
+  onReplyContentChange: (content: string) => void;
+  onSubmitReply: (parentCommentId: string) => void;
+  onCancelReply: () => void;
+  level?: number;
+}
+
+// Helper function to generate avatar from user name/email
+const generateAvatar = (name: string, email: string): string => {
+  const initials = name.split(' ').map(n => n[0]?.toUpperCase()).join('').slice(0, 2) || 
+                   email.split('@')[0].slice(0, 2).toUpperCase();
+  
+  // Generate a consistent color based on the email
+  const hash = email.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', 
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+  ];
+  
+  const color = colors[Math.abs(hash) % colors.length];
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="16" fill="${color}"/>
+      <text x="16" y="20" font-family="Arial, sans-serif" font-size="12" font-weight="bold" 
+            text-anchor="middle" fill="white">${initials}</text>
+    </svg>
+  `)}`;
+};
+
+const Comment: React.FC<CommentProps> = ({
+  comment,
+  onReply,
+  replyingTo,
+  replyContent,
+  onReplyContentChange,
+  onSubmitReply,
+  onCancelReply,
+  level = 0
+}) => {
+  const isReplying = replyingTo === comment.id;
+  const maxLevel = 3; // Limit nesting to prevent excessive indentation
+
+  return (
+    <div className={`comment ${level > 0 ? 'comment-reply' : ''}`} style={{ marginLeft: `${level * 20}px` }}>
+      <div className="comment-header">
+        <div className="comment-author">
+          <img 
+            src={generateAvatar(comment.authorName, comment.authorEmail)} 
+            alt={comment.authorName}
+            className="comment-avatar"
+            title={`${comment.authorName} (${comment.authorEmail})`}
+          />
+          <strong>{comment.authorName}</strong>
+        </div>
+        <span className="comment-date">
+          {new Date(comment.createdAt).toLocaleString()}
+        </span>
+      </div>
+      <div className="comment-content">{comment.content}</div>
+      
+      {level < maxLevel && (
+        <div className="comment-actions">
+          <button 
+            type="button"
+            className="reply-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onReply(comment.id);
+            }}
+            disabled={isReplying}
+          >
+            Reply
+          </button>
+        </div>
+      )}
+
+      {isReplying && (
+        <div className="reply-form">
+          <textarea
+            value={replyContent}
+            onChange={(e) => onReplyContentChange(e.target.value)}
+            placeholder="Write a reply..."
+            rows={2}
+            className="reply-input"
+          />
+          <div className="reply-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onSubmitReply(comment.id);
+              }}
+              disabled={!replyContent.trim()}
+            >
+              Reply
+            </button>
+            <button
+              type="button"
+              className="btn btn-cancel btn-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onCancelReply();
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="comment-replies">
+          {comment.replies.map(reply => (
+            <Comment
+              key={reply.id}
+              comment={reply}
+              onReply={onReply}
+              replyingTo={replyingTo}
+              replyContent={replyContent}
+              onReplyContentChange={onReplyContentChange}
+              onSubmitReply={onSubmitReply}
+              onCancelReply={onCancelReply}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PRIORITIES = [
   { value: 0, label: 'Low' },
@@ -33,12 +177,27 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
     tags: task?.tags.join(', ') || '',
   });
 
-  const comments = task?.comments || [];
+  const [currentTask, setCurrentTask] = useState<TaskResponse | undefined>(task);
+  const comments = currentTask?.comments || [];
   const [newComment, setNewComment] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = !!task;
+
+  // Function to refresh task data without closing modal
+  const refreshTaskData = async () => {
+    if (!currentTask?.id) return;
+    
+    try {
+      const updatedTask = await apiService.getTask(currentTask.id);
+      setCurrentTask(updatedTask);
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to refresh task data');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +220,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
           status: formData.status,
           tags: tagsArray,
         };
-        await apiService.updateTask(task.id, updateRequest);
+        await apiService.updateTask(currentTask!.id, updateRequest);
       } else {
         const createRequest: CreateTaskRequest = {
           title: formData.title,
@@ -83,15 +242,40 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !task) return;
+    if (!newComment.trim() || !currentTask) return;
 
     try {
-      await apiService.addComment(task.id, newComment);
-      // The comment will be updated via SignalR
+      await apiService.addComment(currentTask.id, newComment);
       setNewComment('');
+      // Refresh the task data to show the new comment without closing modal
+      await refreshTaskData();
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to add comment');
     }
+  };
+
+  const handleAddReply = async (parentCommentId: string) => {
+    if (!replyContent.trim() || !currentTask) return;
+
+    try {
+      await apiService.addComment(currentTask.id, replyContent, parentCommentId);
+      setReplyContent('');
+      setReplyingTo(null);
+      // Refresh the task data to show the new reply without closing modal
+      await refreshTaskData();
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to add reply');
+    }
+  };
+
+  const handleStartReply = (commentId: string) => {
+    setReplyingTo(commentId);
+    setReplyContent('');
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setReplyContent('');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -218,15 +402,16 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
               <h3>Comments</h3>
               <div className="comments-list">
                 {comments.map(comment => (
-                  <div key={comment.id} className="comment">
-                    <div className="comment-header">
-                      <strong>{comment.authorName}</strong>
-                      <span className="comment-date">
-                        {new Date(comment.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="comment-content">{comment.content}</div>
-                  </div>
+                  <Comment
+                    key={comment.id}
+                    comment={comment}
+                    onReply={handleStartReply}
+                    replyingTo={replyingTo}
+                    replyContent={replyContent}
+                    onReplyContentChange={setReplyContent}
+                    onSubmitReply={handleAddReply}
+                    onCancelReply={handleCancelReply}
+                  />
                 ))}
               </div>
             </div>
@@ -244,7 +429,11 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 />
                 <button
                   type="button"
-                  onClick={handleAddComment}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAddComment();
+                  }}
                   disabled={!newComment.trim()}
                   className="btn btn-secondary"
                 >

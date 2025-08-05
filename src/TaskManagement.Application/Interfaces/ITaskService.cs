@@ -10,5 +10,5 @@ public interface ITaskService
     Task<TaskResponse?> UpdateTaskAsync(string id, UpdateTaskRequest request, string userId, CancellationToken cancellationToken = default);
     Task<bool> DeleteTaskAsync(string id, string userId, CancellationToken cancellationToken = default);
     Task<bool> UpdateTaskOrderAsync(UpdateTaskOrderRequest request, string userId, CancellationToken cancellationToken = default);
-    Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName, CancellationToken cancellationToken = default);
+    Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName, string userEmail, CancellationToken cancellationToken = default);
 }

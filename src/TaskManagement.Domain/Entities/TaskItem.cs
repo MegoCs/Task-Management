@@ -66,9 +66,18 @@ public class TaskComment
     [BsonElement("authorName")]
     public string AuthorName { get; set; } = string.Empty;
 
+    [BsonElement("authorEmail")]
+    public string AuthorEmail { get; set; } = string.Empty;
+
     [BsonElement("content")]
     public string Content { get; set; } = string.Empty;
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("parentCommentId")]
+    public string? ParentCommentId { get; set; }
+
+    [BsonElement("replies")]
+    public List<TaskComment> Replies { get; set; } = new();
 }

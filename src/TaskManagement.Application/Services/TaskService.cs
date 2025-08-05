@@ -206,7 +206,7 @@ public class TaskService : ITaskService
         return success;
     }
 
-    public async Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName, CancellationToken cancellationToken = default)
+    public async Task<TaskResponse?> AddCommentAsync(string taskId, AddCommentRequest request, string userId, string userName, string userEmail, CancellationToken cancellationToken = default)
     {
         var task = await _taskRepository.GetTaskByIdAsync(taskId, cancellationToken);
         if (task == null) return null;
@@ -215,11 +215,26 @@ public class TaskService : ITaskService
         {
             AuthorId = userId,
             AuthorName = userName,
+            AuthorEmail = userEmail,
             Content = request.Content,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ParentCommentId = request.ParentCommentId
         };
 
-        task.Comments.Add(comment);
+        // If this is a reply to another comment
+        if (!string.IsNullOrEmpty(request.ParentCommentId))
+        {
+            var parentComment = FindCommentById(task.Comments, request.ParentCommentId);
+            if (parentComment == null) return null; // Parent comment not found
+
+            parentComment.Replies.Add(comment);
+        }
+        else
+        {
+            // This is a top-level comment
+            task.Comments.Add(comment);
+        }
+
         task.UpdatedAt = DateTime.UtcNow;
 
         var updatedTask = await _taskRepository.UpdateTaskAsync(taskId, task, cancellationToken);
@@ -231,6 +246,20 @@ public class TaskService : ITaskService
         await _notificationService.NotifyTaskUpdatedAsync(response, cancellationToken);
 
         return response;
+    }
+
+    private static TaskComment? FindCommentById(List<TaskComment> comments, string commentId)
+    {
+        foreach (var comment in comments)
+        {
+            if (comment.Id == commentId)
+                return comment;
+
+            var reply = FindCommentById(comment.Replies, commentId);
+            if (reply != null)
+                return reply;
+        }
+        return null;
     }
 
     private static TaskResponse MapToResponse(TaskItem task)
@@ -253,14 +282,22 @@ public class TaskService : ITaskService
             UpdatedAt = task.UpdatedAt,
             CompletedAt = task.CompletedAt,
             Tags = task.Tags,
-            Comments = task.Comments.Select(c => new TaskCommentResponse
-            {
-                Id = c.Id,
-                AuthorId = c.AuthorId,
-                AuthorName = c.AuthorName,
-                Content = c.Content,
-                CreatedAt = c.CreatedAt
-            }).ToList()
+            Comments = task.Comments.Select(MapCommentToResponse).ToList()
+        };
+    }
+
+    private static TaskCommentResponse MapCommentToResponse(TaskComment comment)
+    {
+        return new TaskCommentResponse
+        {
+            Id = comment.Id,
+            AuthorId = comment.AuthorId,
+            AuthorName = comment.AuthorName,
+            AuthorEmail = comment.AuthorEmail,
+            Content = comment.Content,
+            CreatedAt = comment.CreatedAt,
+            ParentCommentId = comment.ParentCommentId,
+            Replies = comment.Replies.Select(MapCommentToResponse).ToList()
         };
     }
 }

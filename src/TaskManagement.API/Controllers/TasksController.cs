@@ -97,7 +97,7 @@ public class TasksController : ControllerBase
         if (currentUser == null)
             return Unauthorized();
 
-        var task = await _taskService.AddCommentAsync(id, request, currentUser.Id, currentUser.Name, cancellationToken);
+        var task = await _taskService.AddCommentAsync(id, request, currentUser.Id, currentUser.Name, currentUser.Email, cancellationToken);
         if (task == null)
             return NotFound();
 

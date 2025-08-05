@@ -27,8 +27,11 @@ export interface TaskCommentResponse {
   id: string;
   authorId: string;
   authorName: string;
+  authorEmail: string;
   content: string;
   createdAt: string;
+  parentCommentId?: string;
+  replies: TaskCommentResponse[];
 }
 
 export interface CreateTaskRequest {
@@ -156,9 +159,9 @@ class ApiService {
     });
   }
 
-  async addComment(id: string, content: string): Promise<TaskResponse> {
+  async addComment(id: string, content: string, parentCommentId?: string): Promise<TaskResponse> {
     const response = await axios.post(`${this.baseURL}/tasks/${id}/comments`, 
-      { content }, 
+      { content, parentCommentId }, 
       { headers: this.getHeaders() }
     );
     return response.data;
