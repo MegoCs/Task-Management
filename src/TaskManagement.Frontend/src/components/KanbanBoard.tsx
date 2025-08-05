@@ -33,6 +33,17 @@ function KanbanBoard() {
     loadTasks();
   }, [loadTasks]);
 
+  // Update editingTask when the task in context gets updated via SignalR
+  useEffect(() => {
+    if (editingTask && isModalOpen) {
+      const updatedTask = state.tasks.find(task => task.id === editingTask.id);
+      if (updatedTask && JSON.stringify(updatedTask) !== JSON.stringify(editingTask)) {
+        console.log('KanbanBoard: Updating editingTask via SignalR', { old: editingTask, new: updatedTask });
+        setEditingTask(updatedTask);
+      }
+    }
+  }, [state.tasks, editingTask, isModalOpen]);
+
   const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
 

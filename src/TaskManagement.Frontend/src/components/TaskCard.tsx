@@ -33,8 +33,16 @@ function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
 
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 3;
 
+  const handleCardClick = () => {
+    onEdit(task);
+  };
+
   return (
-    <div className={`task-card ${isOverdue ? 'overdue' : ''}`}>
+    <div 
+      className={`task-card ${isOverdue ? 'overdue' : ''}`}
+      onClick={handleCardClick}
+      style={{ cursor: 'pointer' }}
+    >
       <div className="task-header">
         <div className="task-priority" style={{ backgroundColor: priorityColor }}>
           {priorityName}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TaskResponse, CreateTaskRequest, UpdateTaskRequest, TaskCommentResponse, apiService } from '../services/apiService';
 import './TaskModal.css';
 
@@ -17,6 +17,8 @@ interface CommentProps {
   onSubmitReply: (parentCommentId: string) => void;
   onCancelReply: () => void;
   level?: number;
+  collapsedReplies: Set<string>;
+  onToggleCollapse: (commentId: string) => void;
 }
 
 // Helper function to generate avatar from user name/email
@@ -54,10 +56,14 @@ const Comment: React.FC<CommentProps> = ({
   onReplyContentChange,
   onSubmitReply,
   onCancelReply,
-  level = 0
+  level = 0,
+  collapsedReplies,
+  onToggleCollapse
 }) => {
   const isReplying = replyingTo === comment.id;
   const maxLevel = 3; // Limit nesting to prevent excessive indentation
+  const hasReplies = comment.replies && comment.replies.length > 0;
+  const isCollapsed = collapsedReplies.has(comment.id);
 
   return (
     <div className={`comment ${level > 0 ? 'comment-reply' : ''}`} style={{ marginLeft: `${level * 20}px` }}>
@@ -77,8 +83,8 @@ const Comment: React.FC<CommentProps> = ({
       </div>
       <div className="comment-content">{comment.content}</div>
       
-      {level < maxLevel && (
-        <div className="comment-actions">
+      <div className="comment-actions">
+        {level < maxLevel && (
           <button 
             type="button"
             className="reply-btn"
@@ -91,8 +97,22 @@ const Comment: React.FC<CommentProps> = ({
           >
             Reply
           </button>
-        </div>
-      )}
+        )}
+        
+        {hasReplies && (
+          <button 
+            type="button"
+            className="toggle-replies-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleCollapse(comment.id);
+            }}
+          >
+            {isCollapsed ? '▶' : '▼'} {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+          </button>
+        )}
+      </div>
 
       {isReplying && (
         <div className="reply-form">
@@ -131,7 +151,7 @@ const Comment: React.FC<CommentProps> = ({
         </div>
       )}
 
-      {comment.replies && comment.replies.length > 0 && (
+      {hasReplies && !isCollapsed && (
         <div className="comment-replies">
           {comment.replies.map(reply => (
             <Comment
@@ -144,6 +164,8 @@ const Comment: React.FC<CommentProps> = ({
               onSubmitReply={onSubmitReply}
               onCancelReply={onCancelReply}
               level={level + 1}
+              collapsedReplies={collapsedReplies}
+              onToggleCollapse={onToggleCollapse}
             />
           ))}
         </div>
@@ -182,10 +204,61 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [collapsedReplies, setCollapsedReplies] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = !!task;
+
+  // Update internal state when task prop changes (for real-time updates)
+  useEffect(() => {
+    if (task && (!currentTask || task.id !== currentTask.id || JSON.stringify(task) !== JSON.stringify(currentTask))) {
+      console.log('TaskModal: Task prop updated', { old: currentTask, new: task });
+      setCurrentTask(task);
+      // Also update form data if it's a different task
+      if (!currentTask || task.id !== currentTask.id) {
+        setFormData({
+          title: task.title || '',
+          description: task.description || '',
+          assigneeEmail: task.assigneeEmail || '',
+          dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+          priority: task.priority || 1,
+          status: task.status || 0,
+          tags: task.tags.join(', ') || '',
+        });
+      }
+    }
+  }, [task, currentTask]);
+
+  // Initialize collapsed state for comments with replies (default to collapsed)
+  useEffect(() => {
+    if (currentTask?.comments) {
+      const commentsWithReplies = new Set<string>();
+      const collectCommentsWithReplies = (comments: TaskCommentResponse[]) => {
+        comments.forEach(comment => {
+          if (comment.replies && comment.replies.length > 0) {
+            commentsWithReplies.add(comment.id);
+            collectCommentsWithReplies(comment.replies);
+          }
+        });
+      };
+      collectCommentsWithReplies(currentTask.comments);
+      setCollapsedReplies(commentsWithReplies);
+    }
+  }, [currentTask?.comments]);
+
+  // Toggle collapse state for a comment's replies
+  const handleToggleCollapse = (commentId: string) => {
+    setCollapsedReplies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+  };
 
   // Function to refresh task data without closing modal
   const refreshTaskData = async () => {
@@ -411,6 +484,8 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                     onReplyContentChange={setReplyContent}
                     onSubmitReply={handleAddReply}
                     onCancelReply={handleCancelReply}
+                    collapsedReplies={collapsedReplies}
+                    onToggleCollapse={handleToggleCollapse}
                   />
                 ))}
               </div>
