@@ -8,13 +8,6 @@ public class DatabaseSettings
     public string UsersCollectionName { get; set; } = "users";
 }
 
-public class ServiceBusSettings
-{
-    public string ConnectionString { get; set; } = string.Empty;
-    public string TaskReminderQueueName { get; set; } = "task-reminders";
-    public string TaskUpdatesTopicName { get; set; } = "task-updates";
-}
-
 public class RabbitMqSettings
 {
     public string Host { get; set; } = "localhost";
@@ -41,4 +34,10 @@ public class JwtSettings
     public string Issuer { get; set; } = string.Empty;
     public string Audience { get; set; } = string.Empty;
     public int ExpirationMinutes { get; set; } = 1440; // 24 hours
+}
+
+public class RedisSettings
+{
+    public string ConnectionString { get; set; } = "localhost:6379";
+    public string ChannelPrefix { get; set; } = "TaskManagement";
 }

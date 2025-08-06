@@ -12,15 +12,13 @@ A comprehensive, enterprise-grade task management system built with .NET 8, Mong
 - **Click-to-Edit**: Enhanced task cards - click anywhere on a card to open the task modal
 
 ### 💬 Advanced Collaboration
-- **Threaded Comments System**: Multi-level nested comments with replies (up to 3 levels deep)
-- **Collapsible Replies**: Comments with replies default to collapsed, showing count (e.g., "▶ 5 replies")
+- **Threaded Comments System**: Multi-level nested comments with replies.
 - **Real-time Updates**: Live synchronization using SignalR - see comments and task changes instantly across all users
 - **User Avatars**: Dynamic avatar generation for each user in comments
 - **Smart Comment UI**: Contextual reply forms with cancel/submit actions
 
 ### 🔔 Intelligent Notifications
 - **Automated Reminders**: Email notifications for upcoming tasks (24 hours before due date)
-- **Overdue Alerts**: Automatic notifications for overdue tasks
 - **Background Processing**: Reliable message queuing with RabbitMQ for notification delivery
 - **Customizable Templates**: Rich HTML email templates with task details
 

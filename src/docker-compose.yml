@@ -30,6 +30,17 @@ services:
     networks:
       - task-management-network
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: task-management-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - task-management-network
+
   task-management-api:
     build:
       context: .
@@ -46,6 +57,7 @@ services:
       - RabbitMq__Username=taskuser
       - RabbitMq__Password=taskpass
       - RabbitMq__VirtualHost=/
+      - Redis__ConnectionString=redis:6379
       - Jwt__SecretKey=920cb08112ee7e67e5473cda20e19903
       - Jwt__Issuer=TaskManagementAPI
       - Jwt__Audience=TaskManagementClient
@@ -55,6 +67,7 @@ services:
     depends_on:
       - mongodb
       - rabbitmq
+      - redis
     networks:
       - task-management-network
 
@@ -129,6 +142,7 @@ services:
 volumes:
   mongodb_data:
   rabbitmq_data:
+  redis_data:
 
 networks:
   task-management-network:
