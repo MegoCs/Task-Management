@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using MassTransit;
 using TaskManagement.API.Hubs;
 using TaskManagement.API.Services;
+using TaskManagement.API.Extensions;
 using TaskManagement.Application.Extensions;
 using TaskManagement.Application.Interfaces;
 using TaskManagement.Domain.Interfaces;
@@ -125,6 +126,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Add global exception handling middleware first
+app.UseGlobalExceptionHandling();
 
 app.UseCors("AllowReactApp");
 

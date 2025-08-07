@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagement.Application.Interfaces;
+using TaskManagement.Application.Services;
 using TaskManagement.Domain.DTOs;
+using TaskManagement.Domain.Exceptions;
 
 namespace TaskManagement.API.Controllers;
 
@@ -12,11 +14,13 @@ public class TasksController : ControllerBase
 {
     private readonly ITaskService _taskService;
     private readonly IUserService _userService;
+    private readonly ValidationService _validationService;
 
-    public TasksController(ITaskService taskService, IUserService userService)
+    public TasksController(ITaskService taskService, IUserService userService, ValidationService validationService)
     {
         _taskService = taskService;
         _userService = userService;
+        _validationService = validationService;
     }
 
     [HttpGet]
@@ -31,7 +35,7 @@ public class TasksController : ControllerBase
     {
         var task = await _taskService.GetTaskByIdAsync(id, cancellationToken);
         if (task == null)
-            return NotFound();
+            throw new NotFoundException("Task", id);
 
         return Ok(task);
     }
@@ -39,9 +43,11 @@ public class TasksController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TaskResponse>> CreateTask(CreateTaskRequest request, CancellationToken cancellationToken = default)
     {
+        await _validationService.ValidateAsync(request, cancellationToken);
+        
         var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
+            throw new UnauthorizedException();
 
         var task = await _taskService.CreateTaskAsync(request, userId, cancellationToken);
         return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
@@ -50,13 +56,15 @@ public class TasksController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<TaskResponse>> UpdateTask(string id, UpdateTaskRequest request, CancellationToken cancellationToken = default)
     {
+        await _validationService.ValidateAsync(request, cancellationToken);
+        
         var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
+            throw new UnauthorizedException();
 
         var task = await _taskService.UpdateTaskAsync(id, request, userId, cancellationToken);
         if (task == null)
-            return NotFound();
+            throw new NotFoundException("Task", id);
 
         return Ok(task);
     }
@@ -66,11 +74,11 @@ public class TasksController : ControllerBase
     {
         var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
+            throw new UnauthorizedException();
 
         var success = await _taskService.DeleteTaskAsync(id, userId, cancellationToken);
         if (!success)
-            return NotFound();
+            throw new NotFoundException("Task", id);
 
         return NoContent();
     }
@@ -78,14 +86,16 @@ public class TasksController : ControllerBase
     [HttpPut("{id}/order")]
     public async Task<IActionResult> UpdateTaskOrder(string id, [FromBody] UpdateTaskOrderRequest request, CancellationToken cancellationToken = default)
     {
+        await _validationService.ValidateAsync(request, cancellationToken);
+        
         var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
+            throw new UnauthorizedException();
 
         request.TaskId = id; // Ensure the ID matches the route parameter
         var success = await _taskService.UpdateTaskOrderAsync(request, userId, cancellationToken);
         if (!success)
-            return NotFound();
+            throw new NotFoundException("Task", id);
 
         return NoContent();
     }
@@ -93,13 +103,15 @@ public class TasksController : ControllerBase
     [HttpPost("{id}/comments")]
     public async Task<ActionResult<TaskResponse>> AddComment(string id, AddCommentRequest request, CancellationToken cancellationToken = default)
     {
+        await _validationService.ValidateAsync(request, cancellationToken);
+        
         var currentUser = _userService.GetCurrentUser();
         if (currentUser == null)
-            return Unauthorized();
+            throw new UnauthorizedException("Current user not found");
 
         var task = await _taskService.AddCommentAsync(id, request, currentUser.Id, currentUser.Name, currentUser.Email, cancellationToken);
         if (task == null)
-            return NotFound();
+            throw new NotFoundException("Task", id);
 
         return Ok(task);
     }

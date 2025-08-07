@@ -3,6 +3,8 @@ using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Repositories;
 using TaskManagement.Domain.Interfaces;
 using TaskManagement.AuthService.Services;
+using TaskManagement.AuthService.Extensions;
+using TaskManagement.Application.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,9 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"))
 builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+// Add only validation services (not full application services since AuthService doesn't need TaskService)
+builder.Services.AddValidationServices();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -39,6 +44,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Add global exception handling middleware first
+app.UseGlobalExceptionHandling();
 
 app.UseCors("AllowAll");
 app.UseAuthorization();
