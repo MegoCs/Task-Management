@@ -2,6 +2,18 @@
 
 A microservices-based task management application built with .NET 8, React TypeScript, and MongoDB.
 
+## Screenshots
+
+### Sign In Page
+<div align="center">
+  <img src="SignIn.png" alt="Sign In Page" width="800"/>
+</div>
+
+### Kanban Board
+<div align="center">
+  <img src="Board.png" alt="Task Management Board" width="800"/>
+</div>
+
 ## System Architecture
 
 The system follows **Onion Architecture** principles with clear separation of concerns:
