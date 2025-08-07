@@ -1,4 +1,4 @@
-using TaskManagement.Domain.DTOs;
+using TaskManagement.Application.DTOs;
 
 namespace TaskManagement.Application.Interfaces;
 

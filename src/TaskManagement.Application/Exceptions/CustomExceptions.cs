@@ -1,4 +1,4 @@
-namespace TaskManagement.Domain.Exceptions;
+namespace TaskManagement.Application.Exceptions;
 
 /// <summary>
 /// Exception thrown when a requested resource is not found

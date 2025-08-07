@@ -1,5 +1,5 @@
 using FluentValidation;
-using TaskManagement.Domain.Exceptions;
+using TaskManagement.Application.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace TaskManagement.Application.Services;
@@ -35,7 +35,7 @@ public class ValidationService
                     g => g.Select(x => x.ErrorMessage).ToArray()
                 );
 
-            throw new TaskManagement.Domain.Exceptions.ValidationException(errors);
+            throw new Application.Exceptions.ValidationException(errors);
         }
     }
 
@@ -58,7 +58,7 @@ public class ValidationService
                     g => g.Select(x => x.ErrorMessage).ToArray()
                 );
 
-            throw new TaskManagement.Domain.Exceptions.ValidationException(errors);
+            throw new Application.Exceptions.ValidationException(errors);
         }
     }
 }

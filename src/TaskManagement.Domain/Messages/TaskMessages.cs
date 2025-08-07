@@ -1,5 +1,3 @@
-using TaskManagement.Domain.DTOs;
-
 namespace TaskManagement.Domain.Messages;
 
 public record TaskCreatedMessage
@@ -7,7 +5,7 @@ public record TaskCreatedMessage
     public string TaskId { get; init; } = string.Empty;
     public string Action { get; init; } = "Created";
     public string UserId { get; init; } = string.Empty;
-    public TaskResponse? Data { get; init; }
+    public object? Data { get; init; } // Changed from TaskResponse to object to remove DTO dependency
 }
 
 public record TaskUpdateMessage

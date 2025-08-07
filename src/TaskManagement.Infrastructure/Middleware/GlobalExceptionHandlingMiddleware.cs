@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using TaskManagement.Domain.Exceptions;
+using TaskManagement.Application.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

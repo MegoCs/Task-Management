@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using TaskManagement.API.Hubs;
 using TaskManagement.Application.Interfaces;
-using TaskManagement.Domain.DTOs;
+using TaskManagement.Application.DTOs;
 
 namespace TaskManagement.API.Services;
 

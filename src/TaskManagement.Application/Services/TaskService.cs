@@ -1,5 +1,5 @@
 using TaskManagement.Application.Interfaces;
-using TaskManagement.Domain.DTOs;
+using TaskManagement.Application.DTOs;
 using TaskManagement.Domain.Entities;
 using TaskManagement.Domain.Interfaces;
 using TaskManagement.Domain.Messages;

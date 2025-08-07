@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagement.Application.Interfaces;
 using TaskManagement.Application.Services;
-using TaskManagement.Domain.DTOs;
-using TaskManagement.Domain.Exceptions;
+using TaskManagement.Application.DTOs;
+using TaskManagement.Application.Exceptions;
 
 namespace TaskManagement.API.Controllers;
 
