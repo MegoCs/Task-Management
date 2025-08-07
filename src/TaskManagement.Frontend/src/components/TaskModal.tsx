@@ -2,6 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { TaskResponse, CreateTaskRequest, UpdateTaskRequest, TaskCommentResponse, apiService } from '../services/apiService';
 import './TaskModal.css';
 
+// Inline styles for validation
+const taskModalStyles = `
+  .error {
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 0 0.1rem rgba(231, 76, 60, 0.25);
+  }
+  
+  .error-text {
+    color: #e74c3c;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+`;
+
+// Add styles to head if not already present
+if (!document.querySelector('#task-modal-validation-styles')) {
+  const styleElement = document.createElement('style');
+  styleElement.id = 'task-modal-validation-styles';
+  styleElement.textContent = taskModalStyles;
+  document.head.appendChild(styleElement);
+}
+
 interface TaskModalProps {
   task?: TaskResponse;
   onClose: () => void;
@@ -140,8 +163,8 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
     description: task?.description || '',
     assigneeEmail: task?.assigneeEmail || '',
     dueDate: task?.dueDate ? task.dueDate.split('T')[0] : '',
-    priority: task?.priority || 1,
-    status: task?.status || 0,
+    priority: task?.priority !== undefined ? task.priority : 1,
+    status: task?.status !== undefined ? task.status : 0,
     tags: task?.tags.join(', ') || '',
   });
 
@@ -154,8 +177,42 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   const [hasUserInteracted, setHasUserInteracted] = useState(false); // Track if user has manually expanded/collapsed
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const isEditing = !!task;
+
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const getTodayDate = (): string => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Validation functions
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
+    // Title is required
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    }
+
+    // Assignee email validation (if provided)
+    if (formData.assigneeEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.assigneeEmail)) {
+        errors.assigneeEmail = 'Please enter a valid email address';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Clear validation errors when modal opens
+  useEffect(() => {
+    setValidationErrors({});
+    setError(null); // Also clear any backend errors
+  }, [task?.id]); // Reset when switching between different tasks or opening modal
 
   // Update internal state when task prop changes (for real-time updates)
   useEffect(() => {
@@ -170,8 +227,8 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
           description: task.description || '',
           assigneeEmail: task.assigneeEmail || '',
           dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
-          priority: task.priority || 1,
-          status: task.status || 0,
+          priority: task.priority !== undefined ? task.priority : 1,
+          status: task.status !== undefined ? task.status : 0,
           tags: task.tags.join(', ') || '',
         });
       }
@@ -225,6 +282,12 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
@@ -363,7 +426,9 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
               onChange={handleChange}
               required
               placeholder="Enter task title"
+              className={validationErrors.title ? 'error' : ''}
             />
+            {validationErrors.title && <div className="error-text">{validationErrors.title}</div>}
           </div>
 
           <div className="form-group">
@@ -388,7 +453,9 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 value={formData.assigneeEmail}
                 onChange={handleChange}
                 placeholder="user@example.com"
+                className={validationErrors.assigneeEmail ? 'error' : ''}
               />
+              {validationErrors.assigneeEmail && <div className="error-text">{validationErrors.assigneeEmail}</div>}
             </div>
 
             <div className="form-group">
@@ -399,6 +466,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
+                min={getTodayDate()}
               />
             </div>
           </div>

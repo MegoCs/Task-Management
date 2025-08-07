@@ -48,7 +48,7 @@ public class CreateTaskRequestValidator : AbstractValidator<CreateTaskRequest>
             .MaximumLength(1000).WithMessage("Description must not exceed 1000 characters");
 
         RuleFor(x => x.Priority)
-            .InclusiveBetween(1, 3).WithMessage("Priority must be between 1 (Low), 2 (Medium), or 3 (High)");
+            .InclusiveBetween(0, 3).WithMessage("Priority must be between 0 (Low), 1 (Medium), 2 (High), or 3 (Critical)");
 
         RuleFor(x => x.DueDate)
             .GreaterThan(DateTime.UtcNow).WithMessage("Due date must be in the future")
@@ -70,11 +70,11 @@ public class UpdateTaskRequestValidator : AbstractValidator<UpdateTaskRequest>
             .When(x => !string.IsNullOrEmpty(x.Description));
 
         RuleFor(x => x.Priority)
-            .InclusiveBetween(1, 3).WithMessage("Priority must be between 1 (Low), 2 (Medium), or 3 (High)")
+            .InclusiveBetween(0, 3).WithMessage("Priority must be between 0 (Low), 1 (Medium), 2 (High), or 3 (Critical)")
             .When(x => x.Priority.HasValue);
 
         RuleFor(x => x.Status)
-            .InclusiveBetween(1, 4).WithMessage("Status must be between 1 (To Do), 2 (In Progress), 3 (Done), or 4 (Archived)")
+            .InclusiveBetween(0, 3).WithMessage("Status must be between 0 (Todo), 1 (In Progress), 2 (Review), or 3 (Done)")
             .When(x => x.Status.HasValue);
 
         RuleFor(x => x.DueDate)
@@ -97,11 +97,10 @@ public class UpdateTaskOrderRequestValidator : AbstractValidator<UpdateTaskOrder
 {
     public UpdateTaskOrderRequestValidator()
     {
-        RuleFor(x => x.TaskId)
-            .NotEmpty().WithMessage("Task ID is required");
-
+        // TaskId is provided via URL route parameter, not in request body, so no validation needed
+        
         RuleFor(x => x.NewStatus)
-            .InclusiveBetween(1, 4).WithMessage("Status must be between 1 (To Do), 2 (In Progress), 3 (Done), or 4 (Archived)")
+            .InclusiveBetween(0, 3).WithMessage("Status must be between 0 (Todo), 1 (In Progress), 2 (Review), or 3 (Done)")
             .When(x => x.NewStatus.HasValue);
 
         RuleFor(x => x.NewOrder)

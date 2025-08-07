@@ -86,13 +86,13 @@ public class TasksController : ControllerBase
     [HttpPut("{id}/order")]
     public async Task<IActionResult> UpdateTaskOrder(string id, [FromBody] UpdateTaskOrderRequest request, CancellationToken cancellationToken = default)
     {
+        request.TaskId = id; // Ensure the ID matches the route parameter before validation
         await _validationService.ValidateAsync(request, cancellationToken);
         
         var userId = _userService.GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
             throw new UnauthorizedException();
 
-        request.TaskId = id; // Ensure the ID matches the route parameter
         var success = await _taskService.UpdateTaskOrderAsync(request, userId, cancellationToken);
         if (!success)
             throw new NotFoundException("Task", id);

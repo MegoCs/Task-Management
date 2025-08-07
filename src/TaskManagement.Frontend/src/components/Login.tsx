@@ -22,9 +22,6 @@ function Login() {
     setError(null);
 
     try {
-      // Add 3-second delay for testing the loading screen
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
       if (isLogin) {
         await login(formData.email, formData.password);
       } else {

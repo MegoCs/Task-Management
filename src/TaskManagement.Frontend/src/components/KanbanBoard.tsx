@@ -4,6 +4,7 @@ import { TaskResponse, apiService } from '../services/apiService';
 import { useTask } from '../contexts/TaskContext';
 import TaskCard from './TaskCard';
 import TaskModal from './TaskModal';
+import LoadingScreen from './LoadingScreen';
 import './KanbanBoard.css';
 
 const TASK_STATUSES = [
@@ -21,6 +22,7 @@ function KanbanBoard() {
   const loadTasks = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      
       const tasks = await apiService.getTasks();
       dispatch({ type: 'SET_TASKS', payload: tasks });
     } catch (error) {
@@ -45,14 +47,20 @@ function KanbanBoard() {
   }, [state.tasks, editingTask, isModalOpen]);
 
   const handleDragEnd = async (result: any) => {
+    console.log('🔄 Drag operation started:', result);
+    
     const { destination, source, draggableId } = result;
 
-    if (!destination) return;
+    if (!destination) {
+      console.log('❌ No destination - drag cancelled');
+      return;
+    }
 
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
     ) {
+      console.log('❌ Same position - no change needed');
       return;
     }
 
@@ -60,7 +68,7 @@ function KanbanBoard() {
     const oldStatus = parseInt(source.droppableId);
     const newIndex = destination.index;
 
-    console.log('Drag operation:', {
+    console.log('✅ Valid drag operation:', {
       taskId: draggableId,
       oldStatus,
       newStatus,
@@ -164,20 +172,32 @@ function KanbanBoard() {
       const reorderedTask = updatedTasks.find(t => t.id === draggableId);
       const finalOrder = reorderedTask ? reorderedTask.order : newIndex;
       
+      console.log('📡 Sending API request:', {
+        taskId: draggableId,
+        newOrder: finalOrder,
+        newStatus: newStatus !== oldStatus ? newStatus : undefined
+      });
+      
       await apiService.updateTaskOrder(draggableId, {
         newOrder: finalOrder,
         newStatus: newStatus !== oldStatus ? newStatus : undefined,
       });
       
-      console.log('Task order updated successfully');
+      console.log('✅ Task order updated successfully on server');
       
       // Optionally reload tasks to ensure backend consistency
       // Commented out to improve UX, but can be enabled for debugging
       // setTimeout(() => loadTasks(), 500);
       
     } catch (error) {
-      console.error('Error updating task order:', error);
+      console.error('❌ Error updating task order:', error);
+      console.error('📋 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       // Revert the optimistic update by reloading tasks
+      console.log('🔄 Reverting optimistic update...');
       await loadTasks();
     }
   };
@@ -252,11 +272,7 @@ function KanbanBoard() {
   };
 
   if (state.loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner">Loading your tasks...</div>
-      </div>
-    );
+    return <LoadingScreen message="Loading your tasks..." />;
   }
 
   if (state.error) {
