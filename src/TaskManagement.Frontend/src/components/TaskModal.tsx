@@ -11,11 +11,6 @@ interface TaskModalProps {
 interface CommentProps {
   comment: TaskCommentResponse;
   onReply: (commentId: string) => void;
-  replyingTo: string | null;
-  replyContent: string;
-  onReplyContentChange: (content: string) => void;
-  onSubmitReply: (parentCommentId: string) => void;
-  onCancelReply: () => void;
   level?: number;
   collapsedReplies: Set<string>;
   onToggleCollapse: (commentId: string) => void;
@@ -51,16 +46,10 @@ const generateAvatar = (name: string, email: string): string => {
 const Comment: React.FC<CommentProps> = ({
   comment,
   onReply,
-  replyingTo,
-  replyContent,
-  onReplyContentChange,
-  onSubmitReply,
-  onCancelReply,
   level = 0,
   collapsedReplies,
   onToggleCollapse
 }) => {
-  const isReplying = replyingTo === comment.id;
   const maxLevel = 3; // Limit nesting to prevent excessive indentation
   const hasReplies = comment.replies && comment.replies.length > 0;
   const isCollapsed = collapsedReplies.has(comment.id);
@@ -93,7 +82,6 @@ const Comment: React.FC<CommentProps> = ({
               e.stopPropagation();
               onReply(comment.id);
             }}
-            disabled={isReplying}
           >
             Reply
           </button>
@@ -114,43 +102,6 @@ const Comment: React.FC<CommentProps> = ({
         )}
       </div>
 
-      {isReplying && (
-        <div className="reply-form">
-          <textarea
-            value={replyContent}
-            onChange={(e) => onReplyContentChange(e.target.value)}
-            placeholder="Write a reply..."
-            rows={2}
-            className="reply-input"
-          />
-          <div className="reply-actions">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onSubmitReply(comment.id);
-              }}
-              disabled={!replyContent.trim()}
-            >
-              Reply
-            </button>
-            <button
-              type="button"
-              className="btn btn-cancel btn-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onCancelReply();
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
       {hasReplies && !isCollapsed && (
         <div className="comment-replies">
           {comment.replies.map(reply => (
@@ -158,11 +109,6 @@ const Comment: React.FC<CommentProps> = ({
               key={reply.id}
               comment={reply}
               onReply={onReply}
-              replyingTo={replyingTo}
-              replyContent={replyContent}
-              onReplyContentChange={onReplyContentChange}
-              onSubmitReply={onSubmitReply}
-              onCancelReply={onCancelReply}
               level={level + 1}
               collapsedReplies={collapsedReplies}
               onToggleCollapse={onToggleCollapse}
@@ -203,8 +149,9 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   const comments = currentTask?.comments || [];
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState('');
+  const [replyToCommentText, setReplyToCommentText] = useState(''); // For showing which comment we're replying to
   const [collapsedReplies, setCollapsedReplies] = useState<Set<string>>(new Set());
+  const [hasUserInteracted, setHasUserInteracted] = useState(false); // Track if user has manually expanded/collapsed
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -214,6 +161,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   useEffect(() => {
     if (task && (!currentTask || task.id !== currentTask.id || JSON.stringify(task) !== JSON.stringify(currentTask))) {
       console.log('TaskModal: Task prop updated', { old: currentTask, new: task });
+      
       setCurrentTask(task);
       // Also update form data if it's a different task
       if (!currentTask || task.id !== currentTask.id) {
@@ -231,8 +179,10 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   }, [task, currentTask]);
 
   // Initialize collapsed state for comments with replies (default to collapsed)
+  // Only run this on initial load or when switching to a different task
   useEffect(() => {
-    if (currentTask?.comments) {
+    if (currentTask?.comments && !hasUserInteracted) {
+      console.log('Initializing collapsed state for first time');
       const commentsWithReplies = new Set<string>();
       const collectCommentsWithReplies = (comments: TaskCommentResponse[]) => {
         comments.forEach(comment => {
@@ -245,10 +195,11 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
       collectCommentsWithReplies(currentTask.comments);
       setCollapsedReplies(commentsWithReplies);
     }
-  }, [currentTask?.comments]);
+  }, [currentTask?.id]); // Only depend on task ID, not comments content
 
   // Toggle collapse state for a comment's replies
   const handleToggleCollapse = (commentId: string) => {
+    setHasUserInteracted(true); // Mark that user has interacted
     setCollapsedReplies(prev => {
       const newSet = new Set(prev);
       if (newSet.has(commentId)) {
@@ -318,8 +269,18 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
     if (!newComment.trim() || !currentTask) return;
 
     try {
-      await apiService.addComment(currentTask.id, newComment);
+      console.log('Adding comment');
+      
+      if (replyingTo) {
+        // Adding a reply
+        await apiService.addComment(currentTask.id, newComment, replyingTo);
+      } else {
+        // Adding a new comment
+        await apiService.addComment(currentTask.id, newComment);
+      }
       setNewComment('');
+      setReplyingTo(null);
+      setReplyToCommentText('');
       // Refresh the task data to show the new comment without closing modal
       await refreshTaskData();
     } catch (error: any) {
@@ -328,27 +289,47 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   };
 
   const handleAddReply = async (parentCommentId: string) => {
-    if (!replyContent.trim() || !currentTask) return;
-
-    try {
-      await apiService.addComment(currentTask.id, replyContent, parentCommentId);
-      setReplyContent('');
-      setReplyingTo(null);
-      // Refresh the task data to show the new reply without closing modal
-      await refreshTaskData();
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to add reply');
-    }
+    // This function is no longer needed as we use the main text area
+    // But keeping it for compatibility, redirecting to handleAddComment
+    await handleAddComment();
   };
 
   const handleStartReply = (commentId: string) => {
+    // Find the comment text to show which comment we're replying to
+    const findComment = (comments: TaskCommentResponse[], id: string): TaskCommentResponse | null => {
+      for (const comment of comments) {
+        if (comment.id === id) return comment;
+        const found = findComment(comment.replies, id);
+        if (found) return found;
+      }
+      return null;
+    };
+    
+    const targetComment = findComment(comments, commentId);
     setReplyingTo(commentId);
-    setReplyContent('');
+    setReplyToCommentText(targetComment ? `${targetComment.authorName}: "${targetComment.content.substring(0, 50)}${targetComment.content.length > 50 ? '...' : ''}"` : '');
+    
+    // Ensure the parent comment is expanded so replies are visible
+    setHasUserInteracted(true); // Mark that user has interacted
+    setCollapsedReplies(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(commentId); // Remove from collapsed = expand
+      return newSet;
+    });
+    
+    // Scroll to the comment input area
+    setTimeout(() => {
+      const commentInput = document.querySelector('.add-comment-section textarea') as HTMLTextAreaElement;
+      if (commentInput) {
+        commentInput.focus();
+        commentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleCancelReply = () => {
     setReplyingTo(null);
-    setReplyContent('');
+    setReplyToCommentText('');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -479,11 +460,6 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                     key={comment.id}
                     comment={comment}
                     onReply={handleStartReply}
-                    replyingTo={replyingTo}
-                    replyContent={replyContent}
-                    onReplyContentChange={setReplyContent}
-                    onSubmitReply={handleAddReply}
-                    onCancelReply={handleCancelReply}
                     collapsedReplies={collapsedReplies}
                     onToggleCollapse={handleToggleCollapse}
                   />
@@ -494,12 +470,25 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
 
           {isEditing && (
             <div className="add-comment-section">
-              <h3>Add Comment</h3>
+              <h3>{replyingTo ? 'Add Reply' : 'Add Comment'}</h3>
+              {replyingTo && (
+                <div className="replying-to-indicator">
+                  <span>Replying to: {replyToCommentText}</span>
+                  <button 
+                    type="button" 
+                    className="cancel-reply-btn"
+                    onClick={handleCancelReply}
+                    title="Cancel reply"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
               <div className="comment-input-group">
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add a comment..."
+                  placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
                   rows={2}
                 />
                 <button
@@ -512,7 +501,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                   disabled={!newComment.trim()}
                   className="btn btn-secondary"
                 >
-                  Add Comment
+                  {replyingTo ? 'Add Reply' : 'Add Comment'}
                 </button>
               </div>
             </div>

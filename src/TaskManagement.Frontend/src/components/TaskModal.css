@@ -363,6 +363,45 @@ form {
   font-size: 1rem;
 }
 
+.replying-to-indicator {
+  background: linear-gradient(135deg, #e6fffa 0%, #e0f2fe 100%);
+  border: 1px solid #4fd1c7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #2d3748;
+}
+
+.replying-to-indicator span {
+  flex: 1;
+  font-style: italic;
+}
+
+.cancel-reply-btn {
+  background: transparent;
+  border: none;
+  color: #4a5568;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+}
+
+.cancel-reply-btn:hover {
+  background: rgba(74, 85, 104, 0.1);
+  color: #2d3748;
+}
+
 .comment-input-group {
   display: flex;
   flex-direction: column;
