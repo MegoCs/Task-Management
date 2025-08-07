@@ -1,0 +1,99 @@
+/* Logo Component Styles */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  /* Improve PNG rendering quality */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Size Variants */
+.logo-small .logo-image {
+  width: 32px;
+  height: auto;
+}
+
+.logo-medium .logo-image {
+  width: 56px;
+  height: auto;
+}
+
+.logo-large .logo-image {
+  width: 72px;
+  height: auto;
+}
+
+.logo-xl .logo-image {
+  width: 128px;
+  height: auto;
+}
+
+/* Color Variants */
+.logo-light .logo-image {
+  filter: brightness(0) invert(1);
+}
+
+.logo-dark .logo-image {
+  filter: brightness(0);
+}
+
+.logo-colored .logo-image {
+  /* Keep original colors */
+  filter: none;
+}
+
+/* Responsive Classes */
+.logo-responsive .logo-image {
+  width: clamp(32px, 5vw, 64px);
+  height: clamp(32px, 5vw, 64px);
+}
+
+/* Special Login Logo Styles */
+.logo-login {
+  margin-bottom: 1rem;
+}
+
+.logo-login .logo-image {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Animation for loading states */
+@keyframes logoGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(79, 172, 254, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));
+  }
+}
+
+.logo-loading .logo-image {
+  animation: logoGlow 2s ease-in-out infinite;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    transition: none;
+  }
+  
+  .logo:hover {
+    transform: none;
+  }
+  
+  .logo-loading .logo-image {
+    animation: none;
+  }
+}

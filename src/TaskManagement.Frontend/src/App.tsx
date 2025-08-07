@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TaskProvider } from './contexts/TaskContext';
 import Login from './components/Login';
 import KanbanBoard from './components/KanbanBoard';
+import Logo from './components/Logo';
 import './App.css';
 
 function AppContent() {
@@ -26,7 +27,9 @@ function AppContent() {
       <div className="app-container">
         <header className="app-header">
           <div className="header-content">
-            <h1 className="app-title">Task Management System</h1>
+            <div className="app-logo-container">
+              <Logo className="app-logo" variant="colored" size="large" />
+            </div>
             <div className="user-info">
               <span className="welcome-text">Welcome, {user.name || user.email}</span>
               <button onClick={logout} className="logout-btn">

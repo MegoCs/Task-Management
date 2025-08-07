@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import LoadingScreen from './LoadingScreen';
+import Logo from './Logo';
 import './Login.css';
 
 function Login() {
@@ -20,6 +22,9 @@ function Login() {
     setError(null);
 
     try {
+      // Add 3-second delay for testing the loading screen
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       if (isLogin) {
         await login(formData.email, formData.password);
       } else {
@@ -47,9 +52,19 @@ function Login() {
 
   return (
     <div className="login-container">
+      {loading && (
+        <LoadingScreen 
+          message={isLogin ? "Signing you in..." : "Creating your account..."} 
+          overlay={true} 
+        />
+      )}
+      
       <div className="login-card">
         <div className="login-header">
-          <h1>Task Management</h1>
+          <div className="logo-container">
+            <Logo className="logo-login" variant="colored" size="xl" />
+          </div>
+          <h1>Task Manager</h1>
           <h2>{isLogin ? 'Sign In' : 'Sign Up'}</h2>
         </div>
 
@@ -67,6 +82,7 @@ function Login() {
                 onChange={handleChange}
                 required={!isLogin}
                 placeholder="Enter your full name"
+                disabled={loading}
               />
             </div>
           )}
@@ -81,6 +97,7 @@ function Login() {
               onChange={handleChange}
               required
               placeholder="Enter your email"
+              disabled={loading}
             />
           </div>
 
@@ -94,18 +111,19 @@ function Login() {
               onChange={handleChange}
               required
               placeholder="Enter your password"
+              disabled={loading}
             />
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
+            {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
         <div className="login-footer">
           <p>
             {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-            <button type="button" className="link-button" onClick={toggleMode}>
+            <button type="button" className="link-button" onClick={toggleMode} disabled={loading}>
               {isLogin ? 'Sign Up' : 'Sign In'}
             </button>
           </p>

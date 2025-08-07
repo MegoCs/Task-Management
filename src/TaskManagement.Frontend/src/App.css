@@ -293,10 +293,23 @@ body {
   margin: 0 auto;
 }
 
-.app-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
+.app-logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.app-logo {
+  transition: transform 0.3s ease;
+}
+
+.app-logo:hover {
+  transform: scale(1.05);
+}
+
+/* Header specific logo sizing */
+.app-header .app-logo .logo-image {
+  width: 80px !important;
+  height: auto !important;
 }
 
 .user-info {
