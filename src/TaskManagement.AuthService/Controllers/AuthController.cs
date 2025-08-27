@@ -6,9 +6,13 @@ using TaskManagement.Domain.Entities;
 using TaskManagement.Domain.Interfaces;
 using TaskManagement.Application.Exceptions;
 using BCrypt.Net;
+using System.Text.RegularExpressions;
 
 namespace TaskManagement.AuthService.Controllers;
 
+/// <summary>
+/// Authentication controller providing user registration and login endpoints
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
@@ -30,6 +34,12 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Registers a new user with enhanced input validation and sanitization
+    /// </summary>
+    /// <param name="request">User registration details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Authentication response with JWT token</returns>
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancellationToken = default)
     {
@@ -37,7 +47,11 @@ public class AuthController : ControllerBase
 
         await _validationService.ValidateAsync(request, cancellationToken);
 
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        // Sanitize inputs to prevent XSS
+        var sanitizedName = SanitizeInput(request.Name);
+        var sanitizedEmail = SanitizeInput(request.Email);
+        
+        var normalizedEmail = sanitizedEmail.Trim().ToLowerInvariant();
 
         // Check if user already exists
         var existingUser = await _userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
@@ -47,7 +61,7 @@ public class AuthController : ControllerBase
         // Create new user
         var user = new User
         {
-            Name = request.Name.Trim(),
+            Name = sanitizedName.Trim(),
             Email = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         };
@@ -66,6 +80,12 @@ public class AuthController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Authenticates a user with enhanced security measures
+    /// </summary>
+    /// <param name="request">User login credentials</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Authentication response with JWT token</returns>
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancellationToken = default)
     {
@@ -73,7 +93,9 @@ public class AuthController : ControllerBase
 
         await _validationService.ValidateAsync(request, cancellationToken);
 
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        // Sanitize input to prevent XSS
+        var sanitizedEmail = SanitizeInput(request.Email);
+        var normalizedEmail = sanitizedEmail.Trim().ToLowerInvariant();
         var user = await _userRepository.GetUserByEmailAsync(normalizedEmail, cancellationToken);
         
         // Use a generic message for security (don't reveal whether user exists)
@@ -96,9 +118,28 @@ public class AuthController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Health check endpoint for service monitoring
+    /// </summary>
+    /// <returns>Service health status</returns>
     [HttpGet("health")]
     public ActionResult Health()
     {
         return Ok(new { Status = "Healthy", Service = "AuthService", Timestamp = DateTime.UtcNow });
+    }
+
+    /// <summary>
+    /// Sanitizes input string to prevent XSS attacks
+    /// </summary>
+    private static string SanitizeInput(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+            
+        // Remove potentially harmful characters and HTML tags
+        var sanitized = Regex.Replace(input, @"<[^>]*>", string.Empty);
+        sanitized = Regex.Replace(sanitized, @"[<>""']", string.Empty);
+        
+        return sanitized.Trim();
     }
 }
