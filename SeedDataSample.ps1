@@ -182,7 +182,7 @@ $task1 = Invoke-SafeRestMethod -Uri $TASKS_API -Method "Post" -Headers $headers 
   "title": "Security Audit - Critical Vulnerabilities",
   "description": "Conduct comprehensive security audit of the application to identify and fix critical vulnerabilities. This includes penetration testing, code review, and dependency scanning.",
   "assigneeEmail": "john.dev@taskmanagement.com",
-  "dueDate": "2025-08-15T09:00:00Z",
+  "dueDate": "2025-09-15T09:00:00Z",
   "priority": 3,
   "tags": ["security", "audit", "critical", "backend"]
 }
@@ -203,7 +203,7 @@ $task2 = Invoke-SafeRestMethod -Uri $TASKS_API -Method "Post" -Headers $headers 
   "title": "Redesign User Dashboard",
   "description": "Update the user dashboard with modern UI components, improve accessibility, and enhance user experience. Include responsive design for mobile devices.",
   "assigneeEmail": "sarah.design@taskmanagement.com",
-  "dueDate": "2025-08-20T17:00:00Z",
+  "dueDate": "2025-09-20T17:00:00Z",
   "priority": 1,
   "tags": ["ui", "ux", "design", "dashboard", "responsive"]
 }
@@ -223,7 +223,7 @@ $task3 = Invoke-SafeRestMethod -Uri $TASKS_API -Method "Post" -Headers $headers 
   "title": "Implement REST API Versioning",
   "description": "Add API versioning support to maintain backward compatibility. Implement v1 and v2 endpoints with proper documentation and migration guides.",
   "assigneeEmail": "john.dev@taskmanagement.com",
-  "dueDate": "2025-08-25T12:00:00Z",
+  "dueDate": "2025-09-25T12:00:00Z",
   "priority": 2,
   "tags": ["api", "versioning", "backend", "documentation"]
 }
@@ -244,7 +244,7 @@ $task4 = Invoke-SafeRestMethod -Uri $TASKS_API -Method "Post" -Headers $headers 
   "title": "Database Optimization",
   "description": "Optimize database queries and add proper indexing for better performance. Implement caching strategies to improve response times.",
   "assigneeEmail": "john.dev@taskmanagement.com",
-  "dueDate": "2025-08-30T16:00:00Z",
+  "dueDate": "2025-09-30T16:00:00Z",
   "priority": 2,
   "tags": ["database", "performance", "mongodb", "caching"]
 }
@@ -265,7 +265,7 @@ $task5 = Invoke-SafeRestMethod -Uri $TASKS_API -Method "Post" -Headers $headers 
   "title": "Automated Testing Implementation",
   "description": "Set up comprehensive automated testing suite with unit tests, integration tests, and end-to-end tests. Achieve 80%+ code coverage.",
   "assigneeEmail": "mike.qa@taskmanagement.com",
-  "dueDate": "2025-09-05T14:00:00Z",
+  "dueDate": "2025-10-05T14:00:00Z",
   "priority": 2,
   "tags": ["testing", "automation", "qa", "coverage"]
 }
@@ -286,7 +286,7 @@ $task6 = Invoke-SafeRestMethod -Uri $TASKS_API -Method "Post" -Headers $headers 
   "title": "Fix Memory Leak Bug",
   "description": "Investigate and fix memory leak in the threaded comment system affecting performance. This is causing increased RAM usage over time.",
   "assigneeEmail": "john.dev@taskmanagement.com",
-  "dueDate": "2025-08-12T09:00:00Z",
+  "dueDate": "2025-09-12T09:00:00Z",
   "priority": 3,
   "tags": ["bug", "memory-leak", "performance", "urgent"]
 }
